@@ -1,0 +1,2 @@
+inherited DbController: TDbController
+end
