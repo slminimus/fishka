@@ -2,7 +2,7 @@ unit uBaseForms;
 
 interface
 uses Classes, Types, SysUtils, Messages, Controls, Forms, usTools,
-     Windows, uControllers, uDbCtrls;
+     Windows, uControllers;
 {$REGION 'Info'}
 //Форма, работающая с TController. См. описание в uControllers.pas
 {$ENDREGION 'Info'}

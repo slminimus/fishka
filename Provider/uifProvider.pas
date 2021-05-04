@@ -32,7 +32,7 @@ type
   ['{2F97713B-1096-4484-9EF9-45FA61C6AA9F}']
     function  Connection: IConnection;
     function  Connect(const URL, aUser, aPassword: string; const aRole: string = ''): IConnection;
-  procedure Disconnect;
+    procedure Disconnect;
     function  IsConnected: boolean;
   end;
 
@@ -91,6 +91,7 @@ type
     // 2: если DS.State = dsBrowse
     // иначе игнорируется
     function SetParams(const DS: TDataSet; const Params: string = '') :IDBQuery; overload;
+    function SetParams(const us: IUsData; const Params: string = '') :IDBQuery; overload;
     function SetConnection(Value: IConnection): IDBQuery;
     function SetNewTransaction: IDBQuery;
     function SetTransaction(Value: ITransaction = nil): IDBQuery;

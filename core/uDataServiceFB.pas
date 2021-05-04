@@ -12,7 +12,7 @@
 unit uDataServiceFB;
 
 interface
-uses Classes, Types, SysUtils, usIntfs, usTools,
+uses Classes, Types, SysUtils, usIntfs, usTools, Variants, DB, usDb,
      uifProvider, uDBProvider, uFBProvider, uEntities;
 
 type
@@ -21,7 +21,7 @@ type
     procedure Connect(const aURL, aLogin, aPass: string);
     procedure Disconnect;
     function  Connected: boolean;
-    function  CreateMethod(const MAttr: MethodAttribute): IMethod;
+    function  CreateOpMethod(const EntityID: TEntityID; const MAttr: OpMethodAttribute): IOpMethod;
     function  StartTRS: ITransaction;
     procedure ClearCache;
   public
@@ -36,26 +36,31 @@ type
     constructor Create;
   end;
 
-  TMethod = class(TInterfacedObject, IMethod)
+  TOpMethod = class(TInterfacedObject, IOpMethod)
   protected
-    fID: string;
+    fEntityID: TEntityID;
     fOperType: TOperType;
     fOper: string;
     fName: string;
     fQry: IDBQuery;
     function  ParamCount: integer;
     function  GetParam(index: integer): Variant; overload;
-    function  SetParam(index: integer; const Value: Variant): IMethod; overload;
+    function  SetParam(index: integer; const Value: Variant): IOpMethod; overload;
     procedure Set_Param(index: integer; const Value: Variant); overload;
     function  GetParam(const ParamName: string): Variant; overload;
-    function  SetParam(const ParamName: string; const Value: Variant): IMethod; overload;
+    function  SetParam(const ParamName: string; const Value: Variant): IOpMethod; overload;
     procedure Set_Param(const ParamName: string; const Value: Variant); overload;
-    function  SetParams(const DataRow: IUsData): IMethod;
+    function  SetParams(const DataRow: IUsData): IOpMethod; overload;
+    function  SetParams(const DataSet: TDataSet): IOpMethod; overload;
 
     procedure Invoke(Proc: TProc<IUsData> = nil); overload;
     procedure Invoke(TRS: ITransaction; Proc: TProc<IUsData> = nil); overload;
+    procedure Invoke(Receiver: IUsReceiver); overload;
+    procedure Invoke(TRS: ITransaction; Receiver: IUsReceiver); overload;
+    procedure Invoke(DataSet: TDataSet); overload;
+    procedure Invoke(TRS: ITransaction; DataSet: TDataSet); overload;
   public
-    constructor Create(const MAttr: MethodAttribute);
+    constructor Create(const aEntityID: TEntityID; const MAttr: OpMethodAttribute);
   end;
 
   TSqlDict = TDictStr<string>;
@@ -67,43 +72,71 @@ var
 
   SqlDict: TSqlDict = nil; // Кэш скриптов
 
-function QueryByID(const aID: string): string;
+function FindSql(const EntityID: TEntityID; const Oper: TPrivOper): string;
 const
-  SQL = 'select OPER_TYPE,OPER,NAME,SQL from SQLS$VW where ID = :ID';
+  SQL = 'select OPER_TYPE,OPER,NAME,SQL from SQLS$VW where ID = :ID and OPER = :OPER';
+  SQL_UNKNOWN = 'Запрос не найден (%s)'#13#10'ID %s';
+var
+  v: Variant;
+  id: string;
 begin
-  if SqlDict.TryGetValue(aID, result) then exit;
+  id:= EntityID +':'+ Oper;
+  if SqlDict.TryGetValue(id, result) then exit;
   PushCursor;
-  result:= QPrepare(SQL).SetParams([aID]).Open.FieldValue('SQL');
-  SqlDict.Add(aID, result);
+  v:= QPrepare(SQL).SetParams([EntityID, Oper]).Open.FieldValue('SQL');
+  if VarIsNull(v) then
+    raise Exception.CreateFmt(SQL_UNKNOWN, [Oper, EntityID]);
+  result:= v;
+  SqlDict.Add(id, result);
 end;
 
-{ TMethod }
+{ TOpMethod }
 
-constructor TMethod.Create(const MAttr: MethodAttribute);
+constructor TOpMethod.Create(const aEntityID: TEntityID; const MAttr: OpMethodAttribute);
+var sql: string;
 begin
-  fID:= MAttr.ID;
+  fEntityID:= aEntityID;
   fOper:= MAttr.Oper;
   fOperType:= MAttr.OperType;
   fName:= MAttr.Name;
-  fQry:= fConnection.QPrepare(QueryByID(fID));
+  sql:= FindSql(fEntityID, fOper);
+  if fOperType = optSelect then
+    fQry:= fConnection.QPrepare(sql)
+  else
+    fQry:= fConnection.QPrepareWR(sql);
 end;
 
-function TMethod.GetParam(index: integer): Variant;
+function TOpMethod.GetParam(index: integer): Variant;
 begin
   result:= fQry.GetParamValue(index);
 end;
 
-function TMethod.GetParam(const ParamName: string): Variant;
+function TOpMethod.GetParam(const ParamName: string): Variant;
 begin
   result:= fQry.GetParamValue(ParamName);
 end;
 
-procedure TMethod.Invoke(TRS: ITransaction; Proc: TProc<IUsData>);
+procedure TOpMethod.Invoke(Receiver: IUsReceiver);
+begin
+  Invoke(nil, Receiver);
+end;
+
+procedure TOpMethod.Invoke(TRS: ITransaction; Receiver: IUsReceiver);
+begin
+  Invoke(TRS, procedure(us: IUsData)
+    begin
+      Receiver.CopyData(us);
+    end
+  );
+end;
+
+procedure TOpMethod.Invoke(TRS: ITransaction; Proc: TProc<IUsData>);
 begin
   try
     if Assigned(TRS) then
       fQry.SetTransaction((TRS as TTransaction).fTRS);
     PushCursor;
+//fQry.ParamsDebug(3);
     fQry.Exec;
     if Assigned(Proc) then
       Proc(fQry);
@@ -112,40 +145,60 @@ begin
   end;
 end;
 
-procedure TMethod.Invoke(Proc: TProc<IUsData>);
+procedure TOpMethod.Invoke(Proc: TProc<IUsData>);
 begin
   Invoke(nil, Proc);
 end;
 
-function TMethod.ParamCount: integer;
+procedure TOpMethod.Invoke(TRS: ITransaction; DataSet: TDataSet);
+begin
+  Invoke(TRS, procedure(us: IUsData)
+    begin
+      DataSet.CopyData(us);
+    end
+  );
+end;
+
+procedure TOpMethod.Invoke(DataSet: TDataSet);
+begin
+  Invoke(nil, DataSet);
+end;
+
+function TOpMethod.ParamCount: integer;
 begin
   result:= fQry.ParamCount;
 end;
 
-function TMethod.SetParam(index: integer; const Value: Variant): IMethod;
+function TOpMethod.SetParam(index: integer; const Value: Variant): IOpMethod;
 begin
   result:= self;
   fQry.ParamValues[index]:= Value;
 end;
 
-function TMethod.SetParam(const ParamName: string; const Value: Variant): IMethod;
+function TOpMethod.SetParam(const ParamName: string; const Value: Variant): IOpMethod;
 begin
   result:= self;
   fQry.SetParamValue(ParamName, Value);
 end;
 
-function TMethod.SetParams(const DataRow: IUsData): IMethod;
+function TOpMethod.SetParams(const DataSet: TDataSet): IOpMethod;
+begin
+  result:= self;
+  fQry.SetParams(DataSet);
+end;
+
+function TOpMethod.SetParams(const DataRow: IUsData): IOpMethod;
 begin
   result:= self;
   fQry.SetParams(DataRow);
 end;
 
-procedure TMethod.Set_Param(const ParamName: string; const Value: Variant);
+procedure TOpMethod.Set_Param(const ParamName: string; const Value: Variant);
 begin
   fQry.SetParamValue(ParamName, Value);
 end;
 
-procedure TMethod.Set_Param(index: integer; const Value: Variant);
+procedure TOpMethod.Set_Param(index: integer; const Value: Variant);
 begin
   fQry.ParamValues[index]:= Value;
 end;
@@ -158,8 +211,23 @@ begin
 end;
 
 procedure TDataService.Connect(const aURL, aLogin, aPass: string);
+const я = #13#10;
+  SQL =
+       'select'
+    +я+'   rdb$set_context(''USER_SESSION'',''ID_USER'',x''2ED08DF89E2E48D8BDA8C99176CC4A02'')'
+    +я+'  ,rdb$set_context(''USER_SESSION'',''USER_NAME'',''SYSDBA'')'
+    +я+'  ,rdb$set_context(''USER_SESSION'',''KODFIL'',1000)'
+    +я+'from RDB$DATABASE'
+  ;
+
 begin
-  fConnection:= DBProvider.Connect(aURL, aLogin, aPass);
+  try
+    fConnection:= DBProvider.Connect(aURL, aLogin, aPass);
+    QPrepare(SQL).Exec;
+  except
+    fConnection:= nil;
+    raise;
+  end;
 end;
 
 function TDataService.Connected: boolean;
@@ -167,9 +235,9 @@ begin
   result:= Assigned(fConnection);
 end;
 
-function TDataService.CreateMethod(const MAttr: MethodAttribute): IMethod;
+function TDataService.CreateOpMethod(const EntityID: TEntityID; const MAttr: OpMethodAttribute): IOpMethod;
 begin
-  result:= TMethod.Create(MAttr);
+  result:= TOpMethod.Create(EntityID, MAttr);
 end;
 
 procedure TDataService.Disconnect;

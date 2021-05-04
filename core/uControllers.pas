@@ -98,7 +98,7 @@ fCtrls уникализирован.
 
 uses Classes, Types, UITypes, SysUtils, RTTI, Generics.Collections,
      //Windows, //<-- нужен, если использовать OutputDebugStr
-     CornDefs, uEntities, Forms;
+     uCornDefs, uEntities, Forms;
 
 type
   TLifeMode = (
@@ -109,7 +109,7 @@ type
 
   TPrivOper = type string;
 
-  TAccessID  = TGuidString;  // TD объекта доступа (то, на что раздаются права)
+  TAccessID  = string;  // TD объекта доступа (то, на что раздаются права)
   TPrivOpers = array of TPrivOper;
 
   TOperationsHelper = record helper for TPrivOpers
@@ -582,7 +582,7 @@ var
   pc: TPersistentClass;
   mc: TControllerClass absolute pc;
 begin
-  pc:= FindClass(aClassName);
+  pc:= GetClass(aClassName);
   result:= Assigned(pc) and pc.InheritsFrom(TController);
   if result then
     cc:= mc;

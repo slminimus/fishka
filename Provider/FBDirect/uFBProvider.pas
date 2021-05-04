@@ -66,7 +66,7 @@ type
     function  ParamName(index: integer): string;
     function  ParamsDebug (Mode: integer = 3): IDBQuery;
     function  Prepare: IDBQuery; overload;
-    function  Prepare (const SQL: string): IDBQuery; overload;
+    function  Prepare  (const SQL: string): IDBQuery; overload;
     function  SetParam (const ParamName: string; const ParamValue: Variant): IDBQuery; overload;
     function  LoadParam(const ParamName: string; Stream: TStream) :IDBQuery; overload;
     function  LoadParam(const ParamName, FileName: string) :IDBQuery; overload;
@@ -82,6 +82,7 @@ type
     // 2: если DS.State = dsBrowse
     // иначе игнорируется
     function  SetParams(const DS: TDataSet; const Params: string = '') :IDBQuery; overload;
+    function  SetParams(const us: IUsData; const Params: string = '') :IDBQuery; overload;
     function  SetConnection(Value: IConnection): IDBQuery;
     function  SetNewTransaction: IDBQuery;
     function  SetTransaction(Value: ITransaction = nil): IDBQuery;
@@ -118,7 +119,13 @@ type
     function  GetRowData(const RowBuf: array of PVariant): boolean;
     function  Start(StartRow: Integer = -1): IUsData;
   private type
-    TStrIntDict = TDictStr<integer>;
+    TStrIntDict = class(TDictStr<integer>)
+    private
+      fWhat: string;
+    public
+      constructor Create(aWhat: string);
+      function ByName(const Name: string): integer;
+    end;
   private
     fSQL: TSQL;
     fConnection  :IConnection;
@@ -321,7 +328,7 @@ constructor TConnection.Create;
 begin
   fDB:= TpFIBDatabase.Create(nil);
   FDB.DBParams.Clear;
-  FDB.DBParams.Add('lc_ctype=UTF-8');
+  FDB.DBParams.Add('lc_ctype=WIN1251');
   FDB.UseLoginPrompt:= False;
   FDB.SQLDialect:= 3;
   FDB.LibraryName:= 'fbclient.dll';
@@ -461,14 +468,31 @@ begin
   fBody.StartTransaction;
 end;
 
+
+{ TDBQuery.TStrIntDict }
+
+function TDBQuery.TStrIntDict.ByName(const Name: string): integer;
+const
+  MSG = '%s not found: "%s"';
+begin
+  if not TryGetValue(Name, result) then
+    raise Exception.CreateFmt(MSG, [fWhat, Name]);
+end;
+
+constructor TDBQuery.TStrIntDict.Create(aWhat: string);
+begin
+  inherited Create;
+  fWhat:= aWhat;
+end;
+
 { TDBQuery }
 
 constructor TDBQuery.Create(AutoCommit: boolean);
 begin
   fAutoCommit:= AutoCommit;
   fSQL:= TSQL.Create(nil);
-  fNdxFields:= TStrIntDict.Create;
-  fNdxParams:= TStrIntDict.Create;
+  fNdxFields:= TStrIntDict.Create('Field');
+  fNdxParams:= TStrIntDict.Create('Parameter');
   fSQL.OnSQLChanging:= OnSQLChanging;
 end;
 
@@ -698,12 +722,19 @@ begin
 end;
 
 procedure TDBQuery.MakeParamsIndex;
-var i: integer;
+var
+  P: TSQLVAR;
+  i: integer;
 begin
   if fNdxParams.Count = ParamCount then exit;
   fNdxParams.Clear;
-  for i:= 0 to fSQL.ParamCount -1 do
-    fNdxParams.AddOrSetValue(fSQL.Params[i].Name, i);
+  for i:= 0 to fSQL.ParamCount -1 do begin
+    P:= fSQL.Params[i];
+    if not fNdxParams.ContainsKey(P.Name) then
+      fNdxParams.Add(P.Name, i)
+    else if P.IsGuid then
+      fNdxParams[P.Name]:= i;
+  end;
 end;
 
 procedure TDBQuery.Next;
@@ -1133,6 +1164,43 @@ begin
     fSQL.Params[i].Value:= Params[i];
 end;
 
+function TDBQuery.SetParams(const us: IUsData; const Params: string): IDBQuery;
+var
+  ndx: TStringList;
+  //---
+  procedure Step(const P: TSQLVAR);
+  var f: integer;
+  begin
+    f:= ndx.IndexOf(P.Name);
+    if f < 0 then exit;
+    f:= IntPtr(ndx.Objects[f]);
+    P.AsVariant:= us.GetColData(f);
+  end;
+  //---
+var i: Integer;
+    s: string;
+    A: TArray<string>;
+begin
+  result:= self;
+  MakeParamsIndex;
+  us.Start;
+  ndx:= TStringList.Create;
+  try
+    UsColDefsIndex(us, ndx);
+    ndx.Sort;
+    if Params <> '' then begin
+      A:= Params.Split([',', ' ', ';', #9, #13]);
+      for s in A do
+        Step(fSQL.Params[fNdxParams[s]]);
+    end
+    else
+      for i:= 0 to fSQL.Params.Count -1 do
+        Step(fSQL.Params[i]);
+  finally
+    ndx.Free;
+  end;
+end;
+
 function TDBQuery.SetParams(const DS: TDataSet; const Params: string): IDBQuery;
   //---
   procedure Step(const P: TSQLVAR);
@@ -1157,24 +1225,19 @@ function TDBQuery.SetParams(const DS: TDataSet; const Params: string): IDBQuery;
   end;
   //---
 var i: Integer;
-  lst: TStringList;
+    s: string;
+    A: TArray<string>;
 begin
   result:= self;
   MakeParamsIndex;
-  lst:= nil;
-  try
-    if Params <> '' then begin
-      lst:= TStringList.Create;
-      lst.CommaText:= Params;
-      for i:= 0 to lst.Count -1 do
-        Step(fSQL.Params[fNdxParams[lst[i]]]);
-    end
-    else
-      for i:= 0 to fSQL.Params.Count -1 do
-        Step(fSQL.Params[i]);
-  finally
-    lst.Free;
-  end;
+  if Params <> '' then begin
+    A:= Params.Split([',', ' ', ';', #9, #13]);
+    for s in A do
+      Step(fSQL.Params[fNdxParams[s]]);
+  end
+  else
+    for i:= 0 to fSQL.Params.Count -1 do
+      Step(fSQL.Params[i]);
 end;
 
 procedure TDBQuery.SetParamValue(const ParamName: string;
