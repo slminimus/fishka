@@ -25,6 +25,7 @@ type
     stsGridView: TcxGridTableViewStyleSheet;
     stsVerticalGrid: TcxVerticalGridStyleSheet;
     stlGray: TcxStyle;
+    stlGridInactive: TcxStyle;
   private
   public
   end;
@@ -35,7 +36,5 @@ var
 implementation
 {%CLASSGROUP 'Vcl.Controls.TControl'}
 {$R *.dfm}
-
-
 
 end.

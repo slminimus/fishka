@@ -20,7 +20,6 @@ type
     edLogin: TcxEditorRow;
     edPass: TcxEditorRow;
     btnConnect: TcxButton;
-    procedure Button1Click(Sender: TObject);
     procedure acConnectUpdate(Sender: TObject);
     procedure acConnectExecute(Sender: TObject);
     procedure acTest1Update(Sender: TObject);
@@ -52,17 +51,12 @@ end;
 
 procedure TMainForm.acTest1Execute(Sender: TObject);
 begin
-  ViewerDict.ListByEntityID(CID_TEST).Create(Application).RefreshData.Show;
+  ViewerList.ListByEntityID(CID_TEST).ShowViewer;
 end;
 
 procedure TMainForm.acTest1Update(Sender: TObject);
 begin
   TAction(Sender).Enabled:= DataService.Connected;
-end;
-
-procedure TMainForm.Button1Click(Sender: TObject);
-begin
-  ViewerDict.ListByEntityID(CID_TEST).Create(Application).RefreshData.Show;
 end;
 
 end.

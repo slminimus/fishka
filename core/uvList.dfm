@@ -10,6 +10,7 @@ inherited vwrList: TvwrList
     Height = 416
     Align = alClient
     TabOrder = 4
+    TabStop = False
     Properties.ActivePage = tsList
     Properties.CustomButtons.Buttons = <>
     Properties.Options = [pcoAlwaysShowGoDialogButton, pcoRedrawOnResize]
@@ -20,10 +21,6 @@ inherited vwrList: TvwrList
     ClientRectTop = 21
     object tsList: TcxTabSheet
       Caption = 'tsList'
-      ExplicitLeft = 0
-      ExplicitTop = 0
-      ExplicitWidth = 0
-      ExplicitHeight = 0
       object grdMain: TcxGrid
         Left = 0
         Top = 0

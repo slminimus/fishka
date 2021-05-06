@@ -1734,6 +1734,10 @@ object DmDb: TDmDb
       AssignedValues = [svColor]
       Color = clSilver
     end
+    object stlGridInactive: TcxStyle
+      AssignedValues = [svColor]
+      Color = clMedGray
+    end
     object stsGridView: TcxGridTableViewStyleSheet
       Styles.ContentEven = stlGrdEven
       Styles.UseOddEvenStyles = bTrue
@@ -1741,6 +1745,7 @@ object DmDb: TDmDb
       Styles.Group = stlGroup
       Styles.GroupByBox = stlGroupByBox
       Styles.Header = stlGridHeader
+      Styles.Inactive = stlGridInactive
       Styles.Selection = stlGridSelection
       BuiltIn = True
     end
