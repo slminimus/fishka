@@ -9,9 +9,6 @@ inherited vwrListTest: TvwrListTest
     ExplicitHeight = 418
     ClientRectBottom = 417
     inherited tsList: TcxTabSheet
-      ExplicitLeft = 1
-      ExplicitTop = 21
-      ExplicitWidth = 748
       ExplicitHeight = 396
       inherited grdMain: TcxGrid
         Height = 396
@@ -22,6 +19,7 @@ inherited vwrListTest: TvwrListTest
           Styles.Group = nil
           Styles.GroupByBox = nil
           Styles.Header = nil
+          Styles.Inactive = nil
           Styles.Selection = nil
           object gvMain_ID: TcxGridColumn
             Caption = 'ID'

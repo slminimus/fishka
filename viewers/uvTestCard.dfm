@@ -93,6 +93,31 @@ inherited vwrTestCard: TvwrTestCard
       end
     end
   end
+  inherited MainActions: TActionList
+    Left = 248
+    Top = 48
+  end
+  inherited BarMan: TdxBarManager
+    Left = 128
+    Top = 49
+    PixelsPerInch = 96
+    inherited tbnInsert: TdxBarLargeButton
+      ImageIndex = 0
+    end
+    inherited tbnCard: TdxBarLargeButton
+      ImageIndex = 3
+    end
+  end
+  inherited ddmInsert: TdxBarPopupMenu
+    Left = 180
+    Top = 50
+    PixelsPerInch = 96
+  end
+  inherited ddmCard: TdxBarPopupMenu
+    Left = 128
+    Top = 98
+    PixelsPerInch = 96
+  end
   inherited dsRecord: THMemTable
     Left = 180
     Top = 98
@@ -128,31 +153,6 @@ inherited vwrTestCard: TvwrTestCard
       DisplayLabel = #1057#1082#1080#1076#1082#1072', %'
       FieldName = 'DISCONT'
     end
-  end
-  inherited MainActions: TActionList
-    Left = 248
-    Top = 48
-  end
-  inherited BarMan: TdxBarManager
-    Left = 128
-    Top = 49
-    PixelsPerInch = 96
-    inherited tbnInsert: TdxBarLargeButton
-      ImageIndex = 0
-    end
-    inherited tbnCard: TdxBarLargeButton
-      ImageIndex = 3
-    end
-  end
-  inherited ddmInsert: TdxBarPopupMenu
-    Left = 180
-    Top = 50
-    PixelsPerInch = 96
-  end
-  inherited ddmCard: TdxBarPopupMenu
-    Left = 128
-    Top = 98
-    PixelsPerInch = 96
   end
   inherited srcRecord: TDataSource
     Left = 244

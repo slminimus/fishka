@@ -33,7 +33,7 @@ object MainForm: TMainForm
     object edURL: TcxEditorRow
       Properties.Caption = 'URL'
       Properties.DataBinding.ValueType = 'String'
-      Properties.Value = 'localhost:Halt'
+      Properties.Value = 'pc-miniyarov2:fish'
       ID = 0
       ParentID = -1
       Index = 0
@@ -69,8 +69,8 @@ object MainForm: TMainForm
   end
   object ActionList1: TActionList
     Images = DmDb.imlTools
-    Left = 16
-    Top = 80
+    Left = 168
+    Top = 32
     object acConnect: TAction
       Caption = 'Connect'
       ImageIndex = 27

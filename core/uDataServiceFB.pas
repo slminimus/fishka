@@ -21,9 +21,9 @@ type
     procedure Connect(const aURL, aLogin, aPass: string);
     procedure Disconnect;
     function  Connected: boolean;
-    function  CreateOpMethod(const EntityID: TEntityID; const MAttr: OpMethodAttribute): IOpMethod;
+    function  CreateOpMethod(const aEntityID: TEntityID; const aMethod: string;
+                                           RaiseIf: boolean = true): IOpMethod;
     function  StartTRS: ITransaction;
-    procedure ClearCache;
   public
   end;
 
@@ -60,7 +60,8 @@ type
     procedure Invoke(DataSet: TDataSet); overload;
     procedure Invoke(TRS: ITransaction; DataSet: TDataSet); overload;
   public
-    constructor Create(const aEntityID: TEntityID; const MAttr: OpMethodAttribute);
+    constructor Create(const aEntityID: TEntityID; aOperType: TOperType;
+                       const aMethod, aSql: string);
   end;
 
   TSqlDict = TDictStr<string>;
@@ -70,40 +71,18 @@ implementation
 var
   fConnection: IConnection = nil;
 
-  SqlDict: TSqlDict = nil; // Кэш скриптов
-
-function FindSql(const EntityID: TEntityID; const Oper: TPrivOper): string;
-const
-  SQL = 'select OPER_TYPE,OPER,NAME,SQL from SQLS$VW where ID = :ID and OPER = :OPER';
-  SQL_UNKNOWN = 'Запрос не найден (%s)'#13#10'ID %s';
-var
-  v: Variant;
-  id: string;
-begin
-  id:= EntityID +':'+ Oper;
-  if SqlDict.TryGetValue(id, result) then exit;
-  PushCursor;
-  v:= QPrepare(SQL).SetParams([EntityID, Oper]).Open.FieldValue('SQL');
-  if VarIsNull(v) then
-    raise Exception.CreateFmt(SQL_UNKNOWN, [Oper, EntityID]);
-  result:= v;
-  SqlDict.Add(id, result);
-end;
-
 { TOpMethod }
 
-constructor TOpMethod.Create(const aEntityID: TEntityID; const MAttr: OpMethodAttribute);
-var sql: string;
+constructor TOpMethod.Create(const aEntityID: TEntityID; aOperType: TOperType;
+                                                 const aMethod, aSql: string);
 begin
   fEntityID:= aEntityID;
-  fOper:= MAttr.Oper;
-  fOperType:= MAttr.OperType;
-  fName:= MAttr.Name;
-  sql:= FindSql(fEntityID, fOper);
+  fOper:= aMethod;
+  fOperType:= aOperType;
   if fOperType = optSelect then
-    fQry:= fConnection.QPrepare(sql)
+    fQry:= fConnection.QPrepare(aSql)
   else
-    fQry:= fConnection.QPrepareWR(sql);
+    fQry:= fConnection.QPrepareWR(aSql);
 end;
 
 function TOpMethod.GetParam(index: integer): Variant;
@@ -205,11 +184,6 @@ end;
 
 { TDataService }
 
-procedure TDataService.ClearCache;
-begin
-  SqlDict.Clear;
-end;
-
 procedure TDataService.Connect(const aURL, aLogin, aPass: string);
 const я = #13#10;
   SQL =
@@ -223,7 +197,7 @@ const я = #13#10;
 begin
   try
     fConnection:= DBProvider.Connect(aURL, aLogin, aPass);
-    QPrepare(SQL).Exec;
+//    QPrepare(SQL).Exec;
   except
     fConnection:= nil;
     raise;
@@ -235,9 +209,20 @@ begin
   result:= Assigned(fConnection);
 end;
 
-function TDataService.CreateOpMethod(const EntityID: TEntityID; const MAttr: OpMethodAttribute): IOpMethod;
+function TDataService.CreateOpMethod(const aEntityID: TEntityID;
+                          const aMethod: string; RaiseIf: boolean): IOpMethod;
+const
+  ERR = 'Сущность "%s": метод "%s" не определен или нет доступа';
+  SQL = 'select OPTYPE,SQL from GET_ENTITIES_INFO(:ENTITY,:OPER)';
+var
+  us: IUsData;
 begin
-  result:= TOpMethod.Create(EntityID, MAttr);
+  us:= QPrepare(SQL).SetParams([aEntityID, aMethod]).Open;
+  if us.EOF then
+    if RaiseIf then
+      raise Exception.CreateFmt(ERR, [aEntityID, aMethod])
+    else exit(nil);
+  result:= TOpMethod.Create(aEntityID, us.Values[0], aMethod, us.Values[1]);
 end;
 
 procedure TDataService.Disconnect;
@@ -269,9 +254,8 @@ end;
 
 initialization
   DataService:= TDataService.Create;
-  SqlDict:= TSqlDict.Create;
 
 finalization
-  FreeAndNil(SqlDict);
+  DataService:= nil;
 
 end.

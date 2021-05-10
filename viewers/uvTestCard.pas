@@ -7,10 +7,10 @@ uses
   System.Classes, Vcl.Graphics, Vcl.Controls, Vcl.Forms, Vcl.Dialogs,Data.DB,
   MemDS, dxBar, cxClasses, System.Actions, Vcl.ActnList, cxGraphics, cxControls,
   cxLookAndFeels, cxLookAndFeelPainters, cxStyles, cxEdit, cxMaskEdit, cxVGrid,
-  cxDBVGrid, cxInplaceContainer, uEntClasses, Vcl.ExtCtrls;
+  cxDBVGrid, cxInplaceContainer, uEntClasses, uEntities, Vcl.ExtCtrls;
 
 type
-  [TestEntity]
+  [Entity(CID_TEST)]
   TvwrTestCard = class(TvwrCard)
     dsRecordID: TStringField;
     dsRecordCARDNUM: TStringField;

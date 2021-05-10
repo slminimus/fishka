@@ -241,13 +241,14 @@ type
     class constructor ClassCreate;
     class destructor ClassDestroy;
     class procedure Add(Key: TViewerClass; const Value: TEntityID);
+    class procedure EnumAll<T: TViewer>(Proc: TProc<T, TEntityID>);
     class function TryGetValue(Key: TViewerClass; out Value: TEntityID): boolean;
     class function ListByEntityID(const EntityID: TEntityID): TViewerClass; overload;
     class function ListByEntityID(const EntityID: TEntityID; out vc: TViewerClass): boolean; overload;
     class function CardByEntityID(const EntityID: TEntityID): TViewerClass; overload;
     class function CardByEntityID(const EntityID: TEntityID; out cc: TViewerClass): boolean; overload;
-  public
-    class property Dict: TDict read fDict;
+//  public
+//    class property Dict: TDict read fDict;
   end;
 
 var
@@ -1307,6 +1308,14 @@ end;
 class destructor ViewerList.ClassDestroy;
 begin
   FreeAndNil(fDict);
+end;
+
+class procedure ViewerList.EnumAll<T>(Proc: TProc<T, TEntityID>);
+var P: TPairVwr;
+begin
+  for P in fDict do
+    if P.Key.InheritsFrom(T) then
+      Proc(T(P.Key), P.Value);
 end;
 
 class function ViewerList.CardByEntityID(const EntityID: TEntityID): TViewerClass;

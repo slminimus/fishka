@@ -35,60 +35,6 @@ type
     property Props: string read fProps; // CSV list of pairs PropName=PropValue
   end;
 
-  TPrivAttribute = class(TCustomAttribute)
-  private
-    fID: string;
-    fName: string;
-  public
-    constructor Create(const aID: string; const aName: string = '');
-    property ID: string read fID;
-    property Name: string read fName;
-  end;
-
-  EntityAttribute = class(TPrivAttribute);
-
-  OpMethodAttribute = class(TCustomAttribute)
-  private
-    fOperType: TOperType;
-    fOper: string;
-    fName: string;
-  public
-    constructor Create(aOperType: TOperType; const aName, aOper: string);
-    property Oper: string read fOper;
-    property OperType: TOperType read fOperType;
-    property Name: string read fName;
-  end;
-
-  SelectAttribute = class(OpMethodAttribute)
-  public
-    constructor Create(const aName: string = DS_SELECT;
-                       const aOper: string = OP_SELECT);
-  end;
-
-  InsertAttribute = class(OpMethodAttribute)
-  public
-    constructor Create(const aName: string = DS_INSERT;
-                       const aOper: string = OP_INSERT);
-  end;
-
-  DeleteAttribute = class(OpMethodAttribute)
-  public
-    constructor Create(const aName: string = DS_DELETE;
-                       const aOper: string = OP_DELETE);
-  end;
-
-  UpdateAttribute = class(OpMethodAttribute)
-  public
-    constructor Create(const aName: string = DS_UPDATE;
-                       const aOper: string = OP_UPDATE);
-  end;
-
-  GetRowAttribute = class(OpMethodAttribute)
-  public
-    constructor Create(const aName: string = DS_GETROW;
-                       const aOper: string = OP_GETROW);
-  end;
-
   ITransaction = interface
     ['{2832B665-55FF-4DC9-8465-409A855753EF}']
     procedure Commit;
@@ -128,19 +74,17 @@ type
     procedure Connect(const aURL, aLogin, aPass: string);
     procedure Disconnect;
     function  Connected: boolean;
-    function  CreateOpMethod(const EntityID: TEntityID; const MAttr: OpMethodAttribute): IOpMethod;
+    function  CreateOpMethod(const aEntityID: TEntityID; const aMethod: string;
+                                           RaiseIf: boolean = true): IOpMethod;
     function  StartTRS: ITransaction;
-    procedure ClearCache;
   end;
 
-  TEntity = class(TCustomAttribute)
-  protected
-    class procedure GetInfo(out aID, aName: string);
+  EntityAttribute = class(TCustomAttribute)
+  private
+    fID: string;
   public
-    class function _FindOpMethod(const Oper: TPrivOper; out Value): boolean; overload;
-    class function _GetOpMethod(const Oper: TPrivOper): IOpMethod; overload;
-    class function GetID: string;
-    class function GetName: string;
+    constructor Create(const aID: string);
+    property ID: string read fID;
   end;
 
   TEntObjHelper = class helper(TAttrObjHelper) for TObject
@@ -160,150 +104,26 @@ var
 
 implementation
 
-{ TPrivAttribute }
-
-constructor TPrivAttribute.Create(const aID, aName: string);
-begin
-  fID:= aID;
-  fName:= aName;
-end;
-
-{ OpMethodAttribute }
-
-constructor OpMethodAttribute.Create(aOperType: TOperType; const aName, aOper: string);
-begin
-  fOperType:= aOperType;
-  fOper:= aOper;
-  fName:= aName;
-end;
-
-{ SelectAttribute }
-
-constructor SelectAttribute.Create(const aName, aOper: string);
-begin
-  inherited Create(optSelect, aName, aOper);
-end;
-
-{ InsertAttribute }
-
-constructor InsertAttribute.Create(const aName, aOper: string);
-begin
-  inherited Create(optInsert, aName, aOper);
-end;
-
-{ DeleteAttribute }
-
-constructor DeleteAttribute.Create(const aName, aOper: string);
-begin
-  inherited Create(optDelete, aName, aOper);
-end;
-
-{ UpdateAttribute }
-
-constructor UpdateAttribute.Create(const aName, aOper: string);
-begin
-  inherited Create(optUpdate, aName, aOper);
-end;
-
-{ GetRowAttribute }
-
-constructor GetRowAttribute.Create(const aName, aOper: string);
-begin
-  inherited Create(optSelect, aName, aOper);
-end;
 
 const
   ER_METHOD_NOT_FOUND = 'Метод не найден: %s.%s';
 
-class procedure TEntity.GetInfo(out aID, aName: string);
-var _id, _name: string;
+
+{ PropsAttribute }
+
+constructor PropsAttribute.Create(const aProps: string);
 begin
-  _id:= '';
-  _name:= '';
-  EnumAttrs<EntityAttribute>(
-    procedure(Entity: EntityAttribute; var Stop: boolean)
-    begin
-      Stop:= true;
-      _id:= Entity.ID;
-      _name:= Entity.Name;
-    end
-  );
-  aID:= _id;
-  aName:= _name;
+  fProps:= aProps;
 end;
 
-class function TEntity.GetID: string;
-var dummy: string;
-begin
-  GetInfo(result, dummy);
-end;
+{ EntityAttribute }
 
-class function TEntity.GetName: string;
-var dummy: string;
+constructor EntityAttribute.Create(const aID: string);
 begin
-  GetInfo(dummy, result);
-end;
-
-class function TEntity._FindOpMethod(const Oper: TPrivOper; out Value): boolean;
-var v: IOpMethod;
-begin
-  v:= nil;
-  result:= EnumAttrs<OpMethodAttribute>(
-    procedure(OM: OpMethodAttribute; var Stop: boolean)
-    begin
-      if not SameText(Oper, OM.Oper) then exit;
-      Stop:= true;
-      v:= DataService.CreateOpMethod(GetID, OM);
-    end
-  );
-  if Assigned(v) then
-    IOpMethod(Value):= v;
-end;
-
-class function TEntity._GetOpMethod(const Oper: TPrivOper): IOpMethod;
-begin
-  if not _FindOpMethod(Oper, result) then
-    raise Exception.CreateFmt('%s Method not found: %s', [ClassName, Oper]);
+  fID:= aID;
 end;
 
 { TEntObjHelper }
-
-class function TEntObjHelper.ObjMainEntityID: TEntityID;
-var id: TEntityID;
-begin
-  id:= '';
-  EnumAttrs<TEntity>(
-    procedure(Entity: TEntity; var Stop: boolean)
-    begin
-      Stop:= true;
-      id:= Entity.GetID;
-    end
-  );
-  result:= UpperCase(id);
-end;
-
-class function TEntObjHelper.FindOpMethod(const EntityID: TEntityID; const Oper: TPrivOper; out Value): boolean;
-var v: IOpMethod;
-begin
-  v:= nil;
-  EnumAttrs<TEntity>(
-    procedure(Entity: TEntity; var Stop: boolean)
-    var vv: IOpMethod;
-    begin
-      if EntityID <> '' then
-        if not SameText(Entity.GetID, EntityID) then exit;
-      vv:= nil;
-      Stop:= Entity._FindOpMethod(Oper, vv);
-      if Stop then
-        v:= vv
-      else
-        Stop:= EntityID <> '';
-    end
-  );
-  result:= Assigned(v);
-  if result then
-    IOpMethod(Value):= v;
-end;
 
 class function TEntObjHelper.AttrProps: TArray<string>;
 var
@@ -329,6 +149,43 @@ begin
   end;
 end;
 
+class function TEntObjHelper.ObjMainEntityID: TEntityID;
+var id: TEntityID;
+begin
+  id:= '';
+  EnumAttrs<EntityAttribute>(
+    procedure(Entity: EntityAttribute; var Stop: boolean)
+    begin
+      Stop:= true;
+      id:= Entity.ID;
+    end
+  );
+  result:= UpperCase(id);
+end;
+
+class function TEntObjHelper.FindOpMethod(const EntityID: TEntityID; const Oper: TPrivOper; out Value): boolean;
+var v: IOpMethod;
+begin
+  v:= nil;
+  EnumAttrs<EntityAttribute>(
+    procedure(Entity: EntityAttribute; var Stop: boolean)
+    var vv: IOpMethod;
+    begin
+      if EntityID <> '' then
+        if not SameText(Entity.ID, EntityID) then exit;
+      vv:= DataService.CreateOpMethod(Entity.ID, Oper, false);
+      Stop:= Assigned(vv);
+      if Stop then
+        v:= vv
+      else
+        Stop:= EntityID <> '';
+    end
+  );
+  result:= Assigned(v);
+  if result then
+    IOpMethod(Value):= v;
+end;
+
 class function TEntObjHelper.FindOpMethod(const Oper: TPrivOper; out Value): boolean;
 begin
   result:= FindOpMethod('', Oper, Value);
@@ -345,13 +202,6 @@ class function TEntObjHelper.GetOpMethod(const Oper: TPrivOper): IOpMethod;
 begin
   if not FindOpMethod(Oper, result) then
     raise Exception.CreateFmt('%s Method not found: %s', [ClassName, Oper]);
-end;
-
-{ PropsAttribute }
-
-constructor PropsAttribute.Create(const aProps: string);
-begin
-  fProps:= aProps;
 end;
 
 end.

@@ -1,5 +1,5 @@
-inherited vvrListTblView: TvvrListTblView
-  Caption = 'vvrListTblView'
+inherited vwrListTblView: TvwrListTblView
+  Caption = 'vwrListTblView'
   PixelsPerInch = 96
   TextHeight = 13
   inherited pgsMain: TcxPageControl
@@ -48,6 +48,12 @@ inherited vvrListTblView: TvvrListTblView
           GridView = gvMain
         end
       end
+    end
+    inherited tsCard: TcxTabSheet
+      ExplicitLeft = 0
+      ExplicitTop = 0
+      ExplicitWidth = 0
+      ExplicitHeight = 0
     end
   end
   inherited BarMan: TdxBarManager

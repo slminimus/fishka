@@ -141,7 +141,7 @@
             <FormType>dfm</FormType>
         </DCCReference>
         <DCCReference Include="core\uvListTblView.pas">
-            <Form>vvrListTblView</Form>
+            <Form>vwrListTblView</Form>
             <FormType>dfm</FormType>
         </DCCReference>
         <DCCReference Include="core\uControllers.pas">
@@ -155,6 +155,10 @@
         </DCCReference>
         <DCCReference Include="viewers\uvTestCard.pas">
             <Form>vwrTestCard</Form>
+            <FormType>dfm</FormType>
+        </DCCReference>
+        <DCCReference Include="viewers\uvEntities.pas">
+            <Form>vwrEntities</Form>
             <FormType>dfm</FormType>
         </DCCReference>
         <BuildConfiguration Include="Release">

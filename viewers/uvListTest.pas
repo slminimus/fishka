@@ -13,8 +13,8 @@ uses
   cxBarEditItem, Vcl.ExtCtrls;
 
 type
-  [TestEntity]
-  TvwrListTest = class(TvvrListTblView)
+  [Entity(CID_TEST)]
+  TvwrListTest = class(TvwrListTblView)
     gvMain_CARDNUM: TcxGridColumn;
     gvMain_RELEASED: TcxGridColumn;
     gvMain_FIO: TcxGridColumn;

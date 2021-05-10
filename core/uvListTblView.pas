@@ -12,7 +12,7 @@ uses
   Vcl.StdCtrls, usCx;
 
 type
-  TvvrListTblView = class(TvwrListDB)
+  TvwrListTblView = class(TvwrListDB)
     gvMain: TcxGridTableView;
   private
   public

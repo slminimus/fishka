@@ -18,10 +18,11 @@ uses
   uvCards in 'core\uvCards.pas' {vwrCard},
   uvList in 'core\uvList.pas' {vwrList},
   uvListDb in 'core\uvListDb.pas' {vwrListDB},
-  uvListTblView in 'core\uvListTblView.pas' {vvrListTblView},
+  uvListTblView in 'core\uvListTblView.pas' {vwrListTblView},
   uControllers in 'core\uControllers.pas' {Controller: TDataModule},
   uvListTest in 'viewers\uvListTest.pas' {vwrListTest},
-  uvTestCard in 'viewers\uvTestCard.pas' {vwrTestCard};
+  uvTestCard in 'viewers\uvTestCard.pas' {vwrTestCard},
+  uvEntities in 'viewers\uvEntities.pas' {vwrEntities};
 
 {$R *.res}
 
