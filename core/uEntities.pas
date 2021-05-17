@@ -87,6 +87,8 @@ type
     property ID: string read fID;
   end;
 
+  CardAttribute = class(EntityAttribute);
+
   TEntObjHelper = class helper(TAttrObjHelper) for TObject
   public
      // пары (Key=Value) из Props всех PropsAttribute

@@ -145,7 +145,7 @@ var b: boolean;
 begin
   b:= dsRecord.State = dsInsert;
   dsRecord.Cancel;
-  if fAutoCard then
+  if fAutoCard or Master.IsEmpty then
     Close
   else if b then
     InternalRefresh;
@@ -153,13 +153,7 @@ end;
 
 procedure TvwrCard.InternalDelete;
 begin
-  GetOpMethod(OP_DELETE).SetParams(AsUsData).Invoke(
-    procedure(us: IUsData)
-    begin
-      if not us.Start.EOF then
-        PostError(bpeNoDeleted);
-    end
-  );
+  inherited;
   Master.DeleteRow;
   if Master.IsEmpty then
     Close;
@@ -194,6 +188,8 @@ var
     vs: TViewerState;
    row: IUsData;
 begin
+  pk:= '';
+  pkn:= dsRecord.Fields[0].FieldName;
   case vState of
     vstEdit:   oper:= OP_UPDATE;
     vstInsert: oper:= OP_INSERT;
@@ -204,10 +200,8 @@ begin
   GetOpMethod(oper).SetParams(dsRecord).Invoke(
     procedure(us: IUsData)
     begin
-      pk:= '';
       if not us.EOF then
         pk:= coalesce(us.Values[0], '');
-        pkn:= us.DescribeColumn(0).Name;
     end
   );
   if pk = '' then
@@ -230,13 +224,13 @@ begin
   ModalResult:= mrOk;
   if Master = nil then exit;
 
-  row:= NewUsData(dsRecord).Start;
+  row:= AsUsData.Start;
   case vs of
     vstInsert: Master.InsertRow(row);
     vstEdit  : Master.AssignRow(row);
   end;
 
-  if fAutoCard then
+  if fAutoCard or Master.IsEmpty then
     Close;
 end;
 
@@ -260,16 +254,12 @@ begin
   else
     dsRecord.CopyData(us, 1);
   if dsRecord.IsEmpty then
-    Close;
+    InternalInsert;
 end;
 
 function TvwrCard.IsEmpty: boolean;
 begin
   result:= dsRecord.IsEmpty;
 end;
-
-
-initialization
-  BaseCardClass:= TvwrCard;
 
 end.

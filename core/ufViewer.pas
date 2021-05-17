@@ -70,6 +70,12 @@ type
     procedure acCardUpdate(Sender: TObject);
     procedure tbnCardAlignClick(Sender: TObject);
   private
+    type
+      TVwrDict = TDictionary<TEntityID, TViewerClass>;
+    class var
+      fVwrDict: TVwrDict;
+      fCardDict: TVwrDict;
+  private
     // ≈сли Viewer был вызван модально (как справочник, дл€ выбора значени€)
     FVwrModalResult: TVwrModalResult;
     FClosing: boolean;            // Viewer в процессе закрыти€
@@ -78,6 +84,7 @@ type
     fChildNotify: integer;
     procedure WMCActiveControl(var Msg: TMessage); message WMC_ACTIVE_CONTROL;
     procedure WMMove(var Message: TWMMove); message WM_MOVE;
+    procedure WMSetText(var Message: TWMSetText); message WM_SETTEXT;
     procedure HandleAddProps;
     function  GetMaster: TViewer;
     procedure SetMaster(const Value: TViewer);
@@ -87,7 +94,7 @@ type
     procedure CardShow(AutoCard: boolean);
     procedure _CardShow;
     procedure _CardHide;
-    function GetCardAlign: TAlign;
+    function  GetCardAlign: TAlign;
     procedure SetCardAlign(const Value: TAlign);
   protected
     fDockExt: TPoint;
@@ -130,7 +137,6 @@ type
     procedure MasterDataChanged; virtual;
     function  GetCardVisible: boolean; virtual;
     procedure SetCardVisible(const Value: boolean); virtual;
-    procedure FindCardClass; overload;
     procedure FindCardClass(const EntityID: TEntityID); overload;
     procedure CardDocking(Into: boolean); dynamic;
     procedure SetCardPlacement(aHost: TWinControl; aAlign: TAlign); overload;
@@ -151,8 +157,12 @@ type
     type TCanOperation = (copCancel, copDelete, copEdit, copInsert, copPost, copRefresh);
     function  GetCan(aOperation: TCanOperation; IgnoreState: boolean = false): boolean; virtual;
   public
+    class constructor ClassCreate;
+    class destructor ClassDestroy;
+    class function ClassByEntityID(const EntityID: TEntityID; Card: boolean = false): TViewerClass;
     class procedure RegisterViewer;
     class function MainEntityID: TEntityID;
+    class function FindCardClass: TViewerClass; overload;
     // ќсновной метод. ѕровер€ет наличие такого объекта с тем же Params и Master,
     // затем создает новый или фокусирует существующий.
     class function ShowViewer(aMaster: TViewer = nil): TViewer; overload;
@@ -229,32 +239,6 @@ type
 //    property MsgNewDocText: string read fMsgNewDocText write fMsgNewDocText;
   end;
 
-  ViewerList = class
-  private
-    type TDict = TDictionary<TViewerClass, TEntityID>;
-  private
-    class var fDict: TDict;
-    class function Find(const EntityID: TEntityID; Card: boolean; RaiseError: boolean = true): TViewerClass;
-  public type
-    TPairVwr = TPair<TViewerClass, TEntityID>;
-  public
-    class constructor ClassCreate;
-    class destructor ClassDestroy;
-    class procedure Add(Key: TViewerClass; const Value: TEntityID);
-    class procedure EnumAll<T: TViewer>(Proc: TProc<T, TEntityID>);
-    class function TryGetValue(Key: TViewerClass; out Value: TEntityID): boolean;
-    class function ListByEntityID(const EntityID: TEntityID): TViewerClass; overload;
-    class function ListByEntityID(const EntityID: TEntityID; out vc: TViewerClass): boolean; overload;
-    class function CardByEntityID(const EntityID: TEntityID): TViewerClass; overload;
-    class function CardByEntityID(const EntityID: TEntityID; out cc: TViewerClass): boolean; overload;
-//  public
-//    class property Dict: TDict read fDict;
-  end;
-
-var
-  BaseCardClass: TViewerClass = nil;
-
-
 implementation
 {$R *.dfm}
 uses dmDatas, Math, TypInfo;
@@ -301,6 +285,25 @@ begin
 end;
 
 { TViewer }
+
+class function TViewer.ClassByEntityID(const EntityID: TEntityID; Card: boolean): TViewerClass;
+begin
+  fVwrDict.TryGetValue(EntityID, result);
+  if Card and Assigned(result) then
+    result:= result.FindCardClass;
+end;
+
+class constructor TViewer.ClassCreate;
+begin
+  fVwrDict:= TVwrDict.Create;
+  fCardDict:= TVwrDict.Create;
+end;
+
+class destructor TViewer.ClassDestroy;
+begin
+  FreeAndNil(fVwrDict);
+  FreeAndNil(fCardDict);
+end;
 
 class function TViewer.ShowViewer(aMaster: TViewer): TViewer;
 begin
@@ -443,14 +446,15 @@ end;
 procedure TViewer.AfterConstruction;
 begin
   inherited;
-  FindCardClass;
+  fCardViewClass:= FindCardClass;
+  if fCardViewClass.InheritsFrom(ClassType) then
+    fCardViewClass:= nil;
 end;
 
-procedure TViewer.FindCardClass;
+class function TViewer.FindCardClass: TViewerClass;
 var
   id: TEntityID;
 begin
-  if InheritsFrom(BaseCardClass) then exit;
   // id карточки берем из атрибута,
   if not EnumAttrs<CardViewAttribute>(
     procedure(cv: CardViewAttribute; var Stop: boolean)
@@ -460,17 +464,15 @@ begin
     end
   ) then
     id:= MainEntityID;  // если атрибут не указан, берем собственный
-  FindCardClass(id);
+  result:= FindCardClass(id);
 end;
 
-procedure TViewer.FindCardClass(const EntityID: TEntityID);
+class function TViewer.FindCardClass(const EntityID: TEntityID): TViewerClass;
 const
-  ERR = '%s: Cannot find CardView class ID = %s';
+  ERR = '%s: Cannot find Card Viewer fo Entity ID = %s';
 begin
   if EntityID = '' then exit;
-  fCardViewClass:= ViewerList.CardByEntityID(EntityID);
-
-  if fCardViewClass = nil then
+  if not fCardDict.TryGetValue(EntityID, result) then
     raise Exception.CreateFmt(ERR, [ClassName, EntityID]);
 end;
 
@@ -754,7 +756,29 @@ begin
 end;
 
 procedure TViewer.InternalDelete;
+var id: TEntityID;
 begin
+  id:= '';
+  GetOpMethod(OP_DELETE).SetParams(AsUsData).Invoke(
+    procedure(us: IUsData)
+    begin
+      if us.Start.EOF then
+        PostError(bpeIsEmpty);
+      id:= coalesce(us.Values[0], '');
+      us.Next;
+      if not us.EOF then
+        PostError(bpeTooMany);
+    end
+  );
+  if id = '' then
+    PostError(bpeIsEmpty);
+  GetOpMethod(OP_GETROW).SetParam(0, id).Invoke(
+    procedure(us: IUsData)
+    begin
+      if not us.EOF then
+        PostError(bpeNoDeleted);
+    end
+  );
 end;
 
 procedure TViewer.InternalEdit;
@@ -959,13 +983,21 @@ end;
 
 class procedure TViewer.RegisterViewer;
 begin
-  ViewerList.Add(TViewerClass(Self), ObjMainEntityID);
+  EnumAttrs<EntityAttribute>(
+    procedure(Entity: EntityAttribute; var Stop: boolean)
+    begin
+      Stop:= true;
+      if Entity is CardAttribute then
+        fCardDict.Add(Entity.ID, Self)
+      else
+        fVwrDict.Add(Entity.ID, Self);
+    end
+  );
 end;
 
 class function TViewer.MainEntityID: TEntityID;
 begin
-  if not ViewerList.TryGetValue(TViewerClass(Self), result) then
-    result:= ObjMainEntityID;
+  result:= ObjMainEntityID;
 end;
 
 function NormalizeParams(const aParams: string): string;
@@ -1231,6 +1263,10 @@ procedure TViewer.StateChanged;
 begin
   CheckRights;
   FOldState:= vState;
+  if vState = vstInsert then
+    Caption:= format('[Ќовый] %s', [Hint])
+  else
+    Caption:= Hint;
 end;
 
 procedure TViewer.tbnCardAlignClick(Sender: TObject);
@@ -1267,6 +1303,13 @@ begin
   inherited;
 end;
 
+procedure TViewer.WMSetText(var Message: TWMSetText);
+begin
+  if (Message.Text <> nil) and (Message.Text^ <> '[') then
+    Hint:= Message.Text;
+  inherited;
+end;
+
 function TViewer.CheckDoneEdit(FreeDetail: boolean): boolean;
 var i: integer;
 begin
@@ -1298,75 +1341,6 @@ begin
   result:= vState in [vstActive, vstInactive];
 end;
 
-{ ViewerList }
-
-class constructor ViewerList.ClassCreate;
-begin
-  fDict:= TDict.Create;
-end;
-
-class destructor ViewerList.ClassDestroy;
-begin
-  FreeAndNil(fDict);
-end;
-
-class procedure ViewerList.EnumAll<T>(Proc: TProc<T, TEntityID>);
-var P: TPairVwr;
-begin
-  for P in fDict do
-    if P.Key.InheritsFrom(T) then
-      Proc(T(P.Key), P.Value);
-end;
-
-class function ViewerList.CardByEntityID(const EntityID: TEntityID): TViewerClass;
-begin
-  result:= Find(EntityID, true);
-end;
-
-class function ViewerList.ListByEntityID(const EntityID: TEntityID): TViewerClass;
-begin
-  result:= Find(EntityID, false);
-end;
-
-class procedure ViewerList.Add(Key: TViewerClass; const Value: TEntityID);
-begin
-  fDict.Add(Key, Value);
-end;
-
-class function ViewerList.CardByEntityID(const EntityID: TEntityID;
-                                                out cc: TViewerClass): boolean;
-begin
-  cc:= Find(EntityID, true, false);
-  result:= cc <> nil;
-end;
-
-class function ViewerList.ListByEntityID(const EntityID: TEntityID;
-                                                out vc: TViewerClass): boolean;
-begin
-  vc:= Find(EntityID, false, false);
-  result:= vc <> nil;
-end;
-
-class function ViewerList.TryGetValue(Key: TViewerClass; out Value: TEntityID): boolean;
-begin
-  result:= fDict.TryGetValue(Key, Value);
-end;
-
-class function ViewerList.Find(const EntityID: TEntityID; Card, RaiseError: boolean): TViewerClass;
-const
-  ERR = 'Viewer class не зарегистрирован дл€ EntityID = "%s"';
-var
-  pair: TPair<TViewerClass, TEntityID>;
-begin
-  for pair in fDict do begin
-    if (pair.Value <> EntityID) then Continue;
-    if not Card xor pair.Key.InheritsFrom(BaseCardClass) then
-      exit(pair.Key);
-  end;
-  if RaiseError then
-    raise Exception.CreateFmt(ERR, [EntityID]);
-  result:= nil;
-end;
 
 end.
 

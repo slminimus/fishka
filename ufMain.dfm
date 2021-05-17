@@ -32,6 +32,11 @@ object MainForm: TMainForm
     Version = 1
     object edURL: TcxEditorRow
       Properties.Caption = 'URL'
+      Properties.EditPropertiesClassName = 'TcxComboBoxProperties'
+      Properties.EditProperties.ImmediatePost = True
+      Properties.EditProperties.Items.Strings = (
+        'localhost:Halt'
+        'pc-miniyarov2:fish')
       Properties.DataBinding.ValueType = 'String'
       Properties.Value = 'pc-miniyarov2:fish'
       ID = 0

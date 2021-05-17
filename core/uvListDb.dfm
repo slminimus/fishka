@@ -3,12 +3,6 @@ inherited vwrListDB: TvwrListDB
   PixelsPerInch = 96
   TextHeight = 13
   inherited pgsMain: TcxPageControl
-    inherited tsList: TcxTabSheet
-      ExplicitLeft = 1
-      ExplicitTop = 21
-      ExplicitWidth = 748
-      ExplicitHeight = 394
-    end
     inherited tsCard: TcxTabSheet
       ExplicitLeft = 1
       ExplicitTop = 21

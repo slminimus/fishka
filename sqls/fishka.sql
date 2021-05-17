@@ -1,4 +1,5 @@
 ﻿create domain XGUID as CHAR(16) character set OCTETS collate OCTETS;
+create domain XGUID_STR as VarChar(36) character set OCTETS collate OCTETS;
 create domain XINT as INTEGER;
 create domain XOBJNAME as VARCHAR(32);
 create domain XCOMMENT as VARCHAR(128);
@@ -17,9 +18,8 @@ comment on table ENTITIES is 'Сущности, хранимые в БД';
 
 -- drop table SYS_OPERS
 create table SYS_OPERS(
-     ID       XGUID     not null primary key
+     OPER     XOBJNAME  not null primary key
     ,OPERTYPE XINT      not null
-    ,NAME     XOBJNAME  not null
     ,DESCR    XCOMMENT
 );
 alter table SYS_OPERS add constraint UNQ1_SYS_OPERS unique(NAME);
@@ -35,11 +35,11 @@ comment on column SYS_OPERS.OPERTYPE is 'Вид операции:
 create table ENTITY_OPERS(
      ID        XGUID     not null primary key
     ,ENTITY    XGUID
-    ,OPER      XGUID
+    ,OPER      XOBJNAME
     ,SQL       XSQL
 );
 alter table ENTITY_OPERS add constraint UNQ1_ENTITY_OPERS unique(ENTITY,OPER);
-alter table ENTITY_OPERS add constraint FK_ENTITY_OPERS_1 foreign key(OPER) references SYS_OPERS(ID);
+alter table ENTITY_OPERS add constraint FK_ENTITY_OPERS_1 foreign key(OPER) references SYS_OPERS(OPER);
 comment on table ENTITY_OPERS is 'Операции сущностей';
 
 -- drop table MAINTREE

@@ -1,4 +1,5 @@
 inherited vwrCard: TvwrCard
+  BorderStyle = bsSizeToolWin
   Caption = 'vwrCard'
   FormStyle = fsStayOnTop
   OnCreate = FormCreate
@@ -14,10 +15,6 @@ inherited vwrCard: TvwrCard
     BevelOuter = bvNone
     ShowCaption = False
     TabOrder = 4
-  end
-  object dsRecord: THMemTable [1]
-    Left = 507
-    Top = 1
   end
   inherited MainActions: TActionList
     Left = 600
@@ -40,6 +37,10 @@ inherited vwrCard: TvwrCard
   end
   inherited ddmCard: TdxBarPopupMenu
     PixelsPerInch = 96
+  end
+  object dsRecord: THMemTable
+    Left = 507
+    Top = 1
   end
   object srcRecord: TDataSource
     DataSet = dsRecord

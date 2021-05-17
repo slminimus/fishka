@@ -66,6 +66,10 @@ type
 
   TSqlDict = TDictStr<string>;
 
+var
+  //cmd line param -dbg:[0..4]; 0: no debug else IDBQuery.ParamsDebug(SqlDebug -1)
+  SqlDebug: integer = 0;
+
 implementation
 
 var
@@ -115,7 +119,8 @@ begin
     if Assigned(TRS) then
       fQry.SetTransaction((TRS as TTransaction).fTRS);
     PushCursor;
-//fQry.ParamsDebug(3);
+    if SqlDebug > 0 then
+      fQry.ParamsDebug(SqlDebug - 1);
     fQry.Exec;
     if Assigned(Proc) then
       Proc(fQry);
@@ -252,8 +257,16 @@ begin
   fTRS.Rollback;
 end;
 
+procedure CheckDbg;
+var s: string;
+begin
+  FindCmdLineSwitch('dbg', s);
+  SqlDebug:= StrToIntDef(s, 0);
+end;
+
 initialization
   DataService:= TDataService.Create;
+  CheckDbg;
 
 finalization
   DataService:= nil;

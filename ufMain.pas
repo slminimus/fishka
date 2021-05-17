@@ -7,7 +7,8 @@ uses
   System.Classes, Vcl.Graphics, Vcl.Controls, Vcl.Forms, Vcl.Dialogs,
   uBaseForms, Vcl.StdCtrls, uEntClasses, System.Actions, Vcl.ActnList,
   cxGraphics, cxControls, cxLookAndFeels, cxLookAndFeelPainters, cxStyles,
-  cxEdit, cxVGrid, cxInplaceContainer, Vcl.Menus, cxButtons, dmDatas;
+  cxEdit, cxVGrid, cxInplaceContainer, Vcl.Menus, cxButtons, dmDatas,
+  cxDropDownEdit;
 
 type
   TMainForm = class(TBaseForm)
@@ -51,7 +52,7 @@ end;
 
 procedure TMainForm.acTest1Execute(Sender: TObject);
 begin
-  ViewerList.ListByEntityID(CID_TEST).ShowViewer;
+  TViewer.ClassByEntityID(CID_TEST).ShowViewer;
 end;
 
 procedure TMainForm.acTest1Update(Sender: TObject);

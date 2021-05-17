@@ -10,7 +10,7 @@ uses
   cxDBVGrid, cxInplaceContainer, uEntClasses, uEntities, Vcl.ExtCtrls;
 
 type
-  [Entity(CID_TEST)]
+  [Card(CID_TEST)]
   TvwrTestCard = class(TvwrCard)
     dsRecordID: TStringField;
     dsRecordCARDNUM: TStringField;

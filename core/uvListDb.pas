@@ -15,7 +15,6 @@ type
   TvwrListDB = class(TvwrList)
   private
   protected
-    procedure InternalDelete; override;
     procedure InternalRefresh; override;
   public
     procedure AssignRow(us: IUsData); override;
@@ -27,6 +26,7 @@ type
 
 implementation
 {$R *.dfm}
+uses Math;
 
 { TvwrListDB }
 
@@ -49,23 +49,11 @@ procedure TvwrListDB.InsertRow(us: IUsData);
 begin
   ChildNotifyDisable;
   try
-    fdc.InsertRecord(fdc.FocusedRecordIndex);
+    fdc.InsertRecord(max(0, fdc.FocusedRecordIndex));
     AssignRow(us);
   finally
     ChildNotifyEnable;
   end;
-end;
-
-procedure TvwrListDB.InternalDelete;
-begin
-  GetOpMethod(OP_DELETE).SetParams(AsUsData).Invoke(
-    procedure(us: IUsData)
-    begin
-      if not us.Start.EOF then
-        PostError(bpeNoDeleted);
-    end
-  );
-  DeleteRow;
 end;
 
 procedure TvwrListDB.InternalRefresh;

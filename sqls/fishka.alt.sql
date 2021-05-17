@@ -1,23 +1,46 @@
-﻿
+
+create or alter function ASUUID(
+    STR XGUID_STR
+)returns XGUID deterministic
+as
+begin
+  if(:Str = '' or :Str is null) then
+    return null;
+  if (char_length(:Str) = 36) then
+    return char_to_uuid(:Str);
+  if (char_length(:Str) = 16) then
+    return :Str;
+  exception E_INVALID_VALUE 'ASUUID: недопустимое значение параметра: "'|| :STR ||'"';
+end;
+GRANT USAGE ON EXCEPTION E_INVALID_VALUE TO FUNCTION ASUUID;
+grant execute on function ASUUID to ARTIX, USAGE_ROLE;
+---------------------------------------------------------
+
 create or alter procedure GET_ENTITIES_INFO(
-   ENTITY type of column ENTITIES.ID
-  ,OPER   type of column SYS_OPERS.NAME = null
+   ENTITY  XGUID_STR
+  ,SYSOPER type of column SYS_OPERS.OPER = null
 )returns(
-   OPNAME type of column SYS_OPERS.NAME
+   OPER   type of column SYS_OPERS.OPER
   ,OPTYPE type of column SYS_OPERS.OPERTYPE
   ,SQL    type of column ENTITY_OPERS.SQL
 )as
 begin
+  :ENTITY = ASUUID(:ENTITY);
   for
-    select p.NAME,p.OPERTYPE,t.SQL
+    select p.OPER,p.OPERTYPE,t.SQL
     from ENTITY_OPERS t
-    join SYS_OPERS p on p.ID = t.OPER
+    join SYS_OPERS p on p.OPER = t.OPER
     where t.ENTITY = :ENTITY
-      and (:OPER is null or upper(p.NAME) = upper(:OPER))
-    into :OPNAME,:OPTYPE,:SQL
+      and (:SYSOPER is null or upper(p.OPER) = upper(:SYSOPER))
+    into :OPER,:OPTYPE,:SQL
   do
     suspend;
 end;
+grant execute on procedure GET_ENTITIES_INFO to ARTIX, USAGE_ROLE;
+GRANT EXECUTE ON FUNCTION ASUUID TO PROCEDURE GET_ENTITIES_INFO;
+GRANT SELECT ON ENTITY_OPERS TO PROCEDURE GET_ENTITIES_INFO;
+GRANT SELECT ON SYS_OPERS TO PROCEDURE GET_ENTITIES_INFO;
+---------------------------------------------------------
 
 create or alter procedure ENTITIES$EDIT(
    OPER$  XINT
@@ -32,7 +55,7 @@ begin
   begin
     :ID = coalesce(:ID, gen_uuid());
     insert into ENTITIES(ID,NAME,DESCR) values(:ID,:NAME,:DESCR);
-    if (row_count = 0) then
+    if (row_count > 0) then
       :ROW_ID = :ID;
   end else
   if (:OPER$ = 1) then
@@ -59,35 +82,32 @@ GRANT SELECT,INSERT,DELETE,UPDATE ON ENTITIES TO PROCEDURE ENTITIES$EDIT;
 
 create or alter procedure SYS_OPERS$EDIT(
      OPER$    XINT
-    ,ID       type of column SYS_OPERS.ID
+    ,SYSOPER  type of column SYS_OPERS.OPER
     ,OPERTYPE type of column SYS_OPERS.OPERTYPE = null
-    ,NAME     type of column SYS_OPERS.NAME     = null
     ,DESCR    type of column SYS_OPERS.DESCR    = null
 )returns(
-  ROW_ID  XGUID
+  ROW_ID type of column SYS_OPERS.OPER
 )as
 begin
   if (:OPER$ = 0) then
   begin
-    :ID = coalesce(:ID, gen_uuid());
-    insert into SYS_OPERS(ID,OPERTYPE,NAME,DESCR) values(:ID,:OPERTYPE,:NAME,:DESCR);
-    if (row_count = 0) then
-      :ROW_ID = :ID;
+    insert into SYS_OPERS(OPER,OPERTYPE,DESCR) values(:SYSOPER,:OPERTYPE,:DESCR);
+    if (row_count > 0) then
+      :ROW_ID = :SYSOPER;
   end else
   if (:OPER$ = 1) then
   begin
     update SYS_OPERS t set
        OPERTYPE = coalesce(:OPERTYPE, t.OPERTYPE)
-      ,NAME  = coalesce(:NAME, t.NAME)
       ,DESCR = coalesce(:DESCR, t.DESCR)
-    where t.ID = :ID;
+    where t.OPER = :SYSOPER;
     if (row_count > 0) then
-      :ROW_ID = :ID;
+      :ROW_ID = :SYSOPER;
   end else
   if (:OPER$ = 2) then
   begin
-    :ROW_ID = :ID;
-    delete from SYS_OPERS where ID = :ID;
+    :ROW_ID = :SYSOPER;
+    delete from SYS_OPERS t where t.OPER = :SYSOPER;
   end else
     exception E_INVALID_OPER;
   suspend;
@@ -111,7 +131,7 @@ begin
   begin
     :ID = coalesce(:ID, gen_uuid());
     insert into ENTITY_OPERS(ID,ENTITY,OPER,SQL) values(:ID,:ENTITY,:OPER,:SQL);
-    if (row_count = 0) then
+    if (row_count > 0) then
       :ROW_ID = :ID;
   end else
   if (:OPER$ = 1) then
@@ -151,7 +171,7 @@ begin
   begin
     :ID = coalesce(:ID, gen_uuid());
     insert into MAINTREE(ID,NAME,PARENT,ENTITY) values(:ID,:NAME,:PARENT,:ENTITY);
-    if (row_count = 0) then
+    if (row_count > 0) then
       :ROW_ID = :ID;
   end else
   if (:OPER$ = 1) then
@@ -190,7 +210,7 @@ begin
   begin
     :ID = coalesce(:ID, gen_uuid());
     insert into SYSPRIV(ID,SUBJ,ENTOPER) values(:ID,:SUBJ,:ENTOPER);
-    if (row_count = 0) then
+    if (row_count > 0) then
       :ROW_ID = :ID;
   end else
   if (:OPER$ = 1) then
