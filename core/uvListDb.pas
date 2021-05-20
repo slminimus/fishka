@@ -58,7 +58,7 @@ end;
 
 procedure TvwrListDB.InternalRefresh;
 begin
-  GetOpMethod(OP_SELECT).Invoke(Self);
+  GetOpMethod(OP_SELECT, false).Invoke(Self);
   fState:= vstActive;
 end;
 

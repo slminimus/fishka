@@ -30,7 +30,6 @@ type
   private
   protected
     fdc: TcxGridDataController;
-    procedure InternalDelete; override;
     procedure Loaded; override;
     procedure CardDocking(Into: boolean); override;
     function  CardHostByAlign(aAlign: TAlign): TWinControl; override;
@@ -57,12 +56,6 @@ procedure TvwrList.InitializeNewForm;
 begin
   inherited;
   CardHost:= tsList;
-end;
-
-procedure TvwrList.InternalDelete;
-begin
-  inherited;
-  DeleteRow;
 end;
 
 function TvwrList.IsEmpty: boolean;

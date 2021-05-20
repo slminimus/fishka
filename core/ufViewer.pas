@@ -114,6 +114,7 @@ type
     procedure InitializeNewForm; override;
     procedure Notification(AComponent: TComponent; Operation: TOperation); override;
     procedure Loaded; override;
+    class function FindCardClass(const EntityID: TEntityID): TViewerClass; overload;
   protected
     // параметры последнего успешного RefreshData
     fLastParams: string;
@@ -137,7 +138,6 @@ type
     procedure MasterDataChanged; virtual;
     function  GetCardVisible: boolean; virtual;
     procedure SetCardVisible(const Value: boolean); virtual;
-    procedure FindCardClass(const EntityID: TEntityID); overload;
     procedure CardDocking(Into: boolean); dynamic;
     procedure SetCardPlacement(aHost: TWinControl; aAlign: TAlign); overload;
 
@@ -220,7 +220,7 @@ type
     procedure Edit;
     procedure Insert;
     procedure InsCopy;
-    procedure Post; virtual;
+    procedure Post; dynamic;
   public
     property CardPanel: TWinControl read fCardPanel;
     property CardVisible: boolean read GetCardVisible write SetCardVisible;
@@ -441,39 +441,6 @@ end;
 procedure TViewer.acRefreshUpdate(Sender: TObject);
 begin
   TAction(Sender).Enabled:= GetCanRefresh;
-end;
-
-procedure TViewer.AfterConstruction;
-begin
-  inherited;
-  fCardViewClass:= FindCardClass;
-  if fCardViewClass.InheritsFrom(ClassType) then
-    fCardViewClass:= nil;
-end;
-
-class function TViewer.FindCardClass: TViewerClass;
-var
-  id: TEntityID;
-begin
-  // id карточки берем из атрибута,
-  if not EnumAttrs<CardViewAttribute>(
-    procedure(cv: CardViewAttribute; var Stop: boolean)
-    begin
-      Stop:= true;
-      id:= cv.CardID;
-    end
-  ) then
-    id:= MainEntityID;  // если атрибут не указан, берем собственный
-  result:= FindCardClass(id);
-end;
-
-class function TViewer.FindCardClass(const EntityID: TEntityID): TViewerClass;
-const
-  ERR = '%s: Cannot find Card Viewer fo Entity ID = %s';
-begin
-  if EntityID = '' then exit;
-  if not fCardDict.TryGetValue(EntityID, result) then
-    raise Exception.CreateFmt(ERR, [ClassName, EntityID]);
 end;
 
 procedure TViewer.AssignRow(Src: IUsData);
@@ -716,6 +683,39 @@ begin
   FConfirms:= [cfIns, cfEdit, cfDel];
 end;
 
+procedure TViewer.AfterConstruction;
+begin
+  inherited;
+  fCardViewClass:= FindCardClass;
+  if fCardViewClass.InheritsFrom(ClassType) then
+    fCardViewClass:= nil;
+end;
+
+class function TViewer.FindCardClass: TViewerClass;
+var
+  id: TEntityID;
+begin
+  // id карточки берем из атрибута,
+  if not EnumAttrs<CardViewAttribute>(
+    procedure(cv: CardViewAttribute; var Stop: boolean)
+    begin
+      Stop:= true;
+      id:= cv.CardID;
+    end
+  ) then
+    id:= MainEntityID;  // если атрибут не указан, берем собственный
+  result:= FindCardClass(id);
+end;
+
+class function TViewer.FindCardClass(const EntityID: TEntityID): TViewerClass;
+const
+  ERR = '%s: Cannot find Card Viewer fo Entity ID = %s';
+begin
+  if EntityID = '' then exit;
+  if not fCardDict.TryGetValue(EntityID, result) then
+    raise Exception.CreateFmt(ERR, [ClassName, EntityID]);
+end;
+
 procedure TViewer.Edit;
 begin
   if not GetCanEdit then exit;
@@ -756,29 +756,9 @@ begin
 end;
 
 procedure TViewer.InternalDelete;
-var id: TEntityID;
 begin
-  id:= '';
-  GetOpMethod(OP_DELETE).SetParams(AsUsData).Invoke(
-    procedure(us: IUsData)
-    begin
-      if us.Start.EOF then
-        PostError(bpeIsEmpty);
-      id:= coalesce(us.Values[0], '');
-      us.Next;
-      if not us.EOF then
-        PostError(bpeTooMany);
-    end
-  );
-  if id = '' then
-    PostError(bpeIsEmpty);
-  GetOpMethod(OP_GETROW).SetParam(0, id).Invoke(
-    procedure(us: IUsData)
-    begin
-      if not us.EOF then
-        PostError(bpeNoDeleted);
-    end
-  );
+  GetOpMethod(OP_DELETE, true).SetParams(AsUsData).Invoke;
+  DeleteRow;
 end;
 
 procedure TViewer.InternalEdit;
@@ -792,7 +772,29 @@ begin
 end;
 
 procedure TViewer.InternalPost;
+const
+  MSG = '%s.Post: Error Viewer State';
+var
+  oper: string;
+    vs: TViewerState;
 begin
+  vs:= vState;
+  case vs of
+    vstEdit:   oper:= OP_UPDATE;
+    vstInsert: oper:= OP_INSERT;
+    else
+      raise Exception.CreateFmt(MSG, [ClassName]);
+  end;
+  PushCursor;
+  GetOpMethod(oper, true).SetParams(AsUsData).Invoke(
+    procedure(us: IUsData)
+    begin
+      if vs = vstInsert then
+        InsertRow(us)
+      else
+        AssignRow(us);
+    end
+  );
   fState:= vstActive;
 end;
 

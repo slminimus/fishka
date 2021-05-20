@@ -1,24 +1,23 @@
 inherited vwrTestCard: TvwrTestCard
   Caption = 'vwrTestCard'
-  ClientHeight = 167
-  ClientWidth = 360
-  OnDblClick = FormDblClick
-  ExplicitWidth = 376
-  ExplicitHeight = 206
+  ClientHeight = 216
+  ClientWidth = 415
+  ExplicitWidth = 431
+  ExplicitHeight = 255
   PixelsPerInch = 96
   TextHeight = 13
   inherited DockPanel: TPanel
-    Width = 360
-    Height = 133
+    Width = 415
+    Height = 182
     Constraints.MinHeight = 133
     Constraints.MinWidth = 360
     ExplicitWidth = 360
-    ExplicitHeight = 146
+    ExplicitHeight = 133
     object vgEdit: TcxDBVerticalGrid
       Left = 0
       Top = 0
-      Width = 360
-      Height = 133
+      Width = 415
+      Height = 182
       Align = alClient
       OptionsView.ScrollBars = ssVertical
       OptionsView.RowHeaderWidth = 110
@@ -32,7 +31,8 @@ inherited vwrTestCard: TvwrTestCard
       Styles.StyleSheet = DmDb.stsVerticalGrid
       TabOrder = 0
       DataController.DataSource = srcRecord
-      ExplicitHeight = 146
+      ExplicitWidth = 360
+      ExplicitHeight = 133
       Version = 1
       object vgEditID: TcxDBEditorRow
         Properties.EditPropertiesClassName = 'TcxMaskEditProperties'

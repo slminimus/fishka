@@ -40,6 +40,7 @@ create table ENTITY_OPERS(
 );
 alter table ENTITY_OPERS add constraint UNQ1_ENTITY_OPERS unique(ENTITY,OPER);
 alter table ENTITY_OPERS add constraint FK_ENTITY_OPERS_1 foreign key(OPER) references SYS_OPERS(OPER);
+alter table ENTITY_OPERS add constraint FK_ENTITY_OPERS_2 foreign key(ENTITY) references ENTITIES(ID);
 comment on table ENTITY_OPERS is 'Операции сущностей';
 
 -- drop table MAINTREE

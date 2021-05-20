@@ -16,13 +16,15 @@ uses Classes, Types, SysUtils, usIntfs, usTools, Variants, DB, usDb,
      uifProvider, uDBProvider, uFBProvider, uEntities;
 
 type
+  EPostError = class(Exception);
+
   TDataService = class(TInterfacedObject, IDataService)
   private
     procedure Connect(const aURL, aLogin, aPass: string);
     procedure Disconnect;
     function  Connected: boolean;
-    function  CreateOpMethod(const aEntityID: TEntityID; const aMethod: string;
-                                           RaiseIf: boolean = true): IOpMethod;
+    function  CreateOpMethod(const aEntityID: TEntityID; const aMethod: TPrivOper;
+                              Alter: boolean; RaiseIf: boolean = true): IOpMethod;
     function  StartTRS: ITransaction;
   public
   end;
@@ -40,8 +42,8 @@ type
   protected
     fEntityID: TEntityID;
     fOperType: TOperType;
-    fOper: string;
-    fName: string;
+    fOper: TPrivOper;
+    fAlter: boolean;
     fQry: IDBQuery;
     function  ParamCount: integer;
     function  GetParam(index: integer): Variant; overload;
@@ -61,8 +63,10 @@ type
     procedure Invoke(TRS: ITransaction; DataSet: TDataSet); overload;
   public
     constructor Create(const aEntityID: TEntityID; aOperType: TOperType;
-                       const aMethod, aSql: string);
+                 const aMethod: TPrivOper; Alter: boolean; const aSql: string);
   end;
+
+  TOpMethodClass = class of TOpMethod;
 
   TSqlDict = TDictStr<string>;
 
@@ -71,22 +75,45 @@ var
   SqlDebug: integer = 0;
 
 implementation
+uses StrUtils, usClasses, TypInfo;
 
 var
   fConnection: IConnection = nil;
 
+function GetSql(const aEntityID: TEntityID;
+         const aMethod: TPrivOper; Alter: boolean; out Sql: string): TOperType;
+const
+  QRY = 'select OPER,OPTYPE,SQL from GET_ENTITIES_INFO(:ENTITY,:OPER)';
+  ALT = 'select first 1 OPER,OPTYPE,SQL from GET_ENTITIES_INFO(:ENTITY)'
+       +' where OPER in(:OPSEL, :OPGET) order by OPER';
+var
+  us: IUsData;
+begin
+  Sql:= '';
+  us:= QPrepare(ifthen(Alter and SameText(aMethod, OP_SELECT), ALT, QRY))
+       .SetParams([aEntityID, UpperCase(aMethod), OP_GETROW])
+       .Open
+  ;
+  if us.EOF then
+    exit(optSelect);
+  sql:= us.Values[2];
+  // Если нужен OP_GETROW, а такового нет, предполагается, что в теле запроса
+  // OP_SELECT есть нужный where (и доп. поля) под комментарием /*/ ... /*/
+  if Alter and SameText(us.Values[0], OP_SELECT) then
+    sql:= StringReplace(sql, '/*/', '', [rfReplaceAll]);
+  result:= TOperType(us.Values[1]);
+end;
+
 { TOpMethod }
 
 constructor TOpMethod.Create(const aEntityID: TEntityID; aOperType: TOperType;
-                                                 const aMethod, aSql: string);
+                const aMethod: TPrivOper; Alter: boolean; const aSql: string);
 begin
   fEntityID:= aEntityID;
-  fOper:= aMethod;
+  fOper:= UpperCase(aMethod);
   fOperType:= aOperType;
-  if fOperType = optSelect then
-    fQry:= fConnection.QPrepare(aSql)
-  else
-    fQry:= fConnection.QPrepareWR(aSql);
+  fAlter:= Alter;
+  fQry:= fConnection.QPrepare(aSql);
 end;
 
 function TOpMethod.GetParam(index: integer): Variant;
@@ -113,19 +140,108 @@ begin
   );
 end;
 
+function OpType(const Oper: TPrivOper): TOperType;
+const //    01...5..8.0....5....0.2
+  STD_OPS = 'SELECT,INSERT,DELETE,UPDATE,';
+begin
+  case Pos(Oper + ',', STD_OPS) of
+     1: result:= optSelect;
+     8: result:= optInsert;
+    15: result:= optDelete;
+    22: result:= optUpdate;
+    else
+      raise Exception.Create('Альтернативный режим допустим только для стандвртных методов.');
+  end;
+end;
+
+type
+  TPostError = (bpeOK, bpeNoDeleted, bpeBadState, bpeIsEmpty, bpeTooMany);
+
+procedure PostError(Code: TPostError);
+const MSG = 'Ошибка редактирования. Обратитесь к разработчику.'#13#10' %s';
+begin
+  raise EPostError.CreateFmt(MSG, [
+                Copy(GetEnumName(TypeInfo(TPostError), ord(Code)), 4, MaxInt)
+  ]);
+end;
+
 procedure TOpMethod.Invoke(TRS: ITransaction; Proc: TProc<IUsData>);
+  //--
+  function CheckDelete: IUsData;
+  var id: Variant;
+     sql: string;
+       q: IDBQuery;
+  begin
+    id:= null;
+    if fQry.EOF then
+      PostError(bpeIsEmpty);
+    id:= fQry.Values[0];
+    GetSql(fEntityID, OP_SELECT, true, sql);
+    q:= QPrepare(sql, fQry.Transaction).SetParams(fQry);
+    fQry.Next;
+    if not fQry.EOF then
+      PostError(bpeTooMany);
+    if VarIsNull(id) then
+      PostError(bpeIsEmpty);
+    q.Exec;
+    if not q.EOF then
+      PostError(bpeNoDeleted);
+    result:= q;
+  end;
+  //--
+  function CheckPost: IUsData;
+  var id: Variant;
+     sql: string;
+       q: IDBQuery;
+       c: IUsDataCache;
+  begin
+    id:= null;
+    if fQry.EOF then
+      PostError(bpeIsEmpty);
+    id:= fQry.Values[0];
+    GetSql(fEntityID, OP_SELECT, true, sql);
+    q:= QPrepare(sql, fQry.Transaction).SetParams(fQry);
+    fQry.Next;
+    if not fQry.EOF then
+      PostError(bpeTooMany);
+    if VarIsNull(id) then
+      PostError(bpeIsEmpty);
+    q.Exec;
+    if q.EOF then
+      PostError(bpeIsEmpty);
+    c:= NewUsDataCache(q, 1);
+    if not q.EOF then
+      PostError(bpeTooMany);
+    result:= c;
+  end;
+  //--
+var qSel: IUsData;
 begin
   try
     if Assigned(TRS) then
-      fQry.SetTransaction((TRS as TTransaction).fTRS);
+      fQry.SetTransaction((TRS as TTransaction).fTRS)
+    else if (fOperType <> optSelect) and fQry.Transaction.ReadOnly then
+      fQry.SetNewTransaction;  // заменить транзакцию на пишущую
     PushCursor;
     if SqlDebug > 0 then
       fQry.ParamsDebug(SqlDebug - 1);
     fQry.Exec;
+
+    if fAlter then begin
+      case OpType(fOper) of
+        optSelect: ;
+        optDelete: qSel:= CheckDelete;
+        else       qSel:= CheckPost;
+      end;
+    end else
+      qSel:= fQry;
+
     if Assigned(Proc) then
-      Proc(fQry);
-  finally
+      Proc(qSel);
     fQry.Close;
+  except
+    fQry.Transaction.Rollback;
+    raise;
   end;
 end;
 
@@ -190,15 +306,6 @@ end;
 { TDataService }
 
 procedure TDataService.Connect(const aURL, aLogin, aPass: string);
-const я = #13#10;
-  SQL =
-       'select'
-    +я+'   rdb$set_context(''USER_SESSION'',''ID_USER'',x''2ED08DF89E2E48D8BDA8C99176CC4A02'')'
-    +я+'  ,rdb$set_context(''USER_SESSION'',''USER_NAME'',''SYSDBA'')'
-    +я+'  ,rdb$set_context(''USER_SESSION'',''KODFIL'',1000)'
-    +я+'from RDB$DATABASE'
-  ;
-
 begin
   try
     fConnection:= DBProvider.Connect(aURL, aLogin, aPass);
@@ -215,19 +322,19 @@ begin
 end;
 
 function TDataService.CreateOpMethod(const aEntityID: TEntityID;
-                          const aMethod: string; RaiseIf: boolean): IOpMethod;
+                 const aMethod: TPrivOper; Alter, RaiseIf: boolean): IOpMethod;
 const
   ERR = 'Сущность "%s": метод "%s" не определен или нет доступа';
-  SQL = 'select OPTYPE,SQL from GET_ENTITIES_INFO(:ENTITY,:OPER)';
 var
-  us: IUsData;
+  OperType: TOperType;
+  Sql: string;
 begin
-  us:= QPrepare(SQL).SetParams([aEntityID, aMethod]).Open;
-  if us.EOF then
+  OperType:= GetSql(aEntityID, aMethod, Alter, Sql);
+  if Sql = '' then
     if RaiseIf then
       raise Exception.CreateFmt(ERR, [aEntityID, aMethod])
-    else exit(nil);
-  result:= TOpMethod.Create(aEntityID, us.Values[0], aMethod, us.Values[1]);
+    else Exit(nil);
+  result:= TOpMethod.Create(aEntityID, OperType, aMethod, Alter, sql);
 end;
 
 procedure TDataService.Disconnect;

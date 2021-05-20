@@ -16,6 +16,7 @@ type
     function  Start: ITransaction;
     procedure Commit;
     procedure Rollback;
+    function  ReadOnly: boolean;
   end;
 
   IConnection = interface

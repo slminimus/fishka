@@ -45,12 +45,14 @@ type
     function  Start: ITransaction;
     procedure Commit;
     procedure Rollback;
+    function  ReadOnly: boolean;
   private
     fBody: TpFIBTransaction;
     fConnection: TConnection;
+    fReadOnly: boolean;
     procedure CommitRetaining;
   public
-    constructor Create(aConnection: TConnection);
+    constructor Create(aConnection: TConnection; AReadOnly: boolean);
     destructor Destroy; override;
   end;
 
@@ -335,8 +337,7 @@ begin
   FDB.DBParams.Add('user_name=');
   FDB.DBParams.Add('password=');
   FDB.DBParams.Add('sql_role_name=');
-  FReadTRS:= TTransaction.Create(Self);
-  (FReadTRS as TTransaction).fBody.TRParams.CommaText:= 'read,read_committed,rec_version,nowait';
+  FReadTRS:= TTransaction.Create(Self, true);
   FDB.DefaultTransaction:= (FReadTRS as TTransaction).fBody;
 end;
 
@@ -400,17 +401,10 @@ end;
 
 function TConnection.NewTRS(AReadOnly: boolean): ITransaction;
 var trs: TTransaction;
-  s: string;
 begin
-  trs:= TTransaction.Create(Self);
   try
-    if AReadOnly then
-      s:= 'read,';
-    s:= s + 'read_committed,rec_version,nowait';
-    trs.fBody.TRParams.CommaText:= s;
-    trs.fBody.AddDatabase(fDB);
+    trs:= TTransaction.Create(Self, AReadOnly);
   except
-    trs.Free;
     CheckFIBError;
     raise;
   end;
@@ -424,10 +418,17 @@ end;
 
 { TTransaction }
 
-constructor TTransaction.Create(aConnection: TConnection);
+constructor TTransaction.Create(aConnection: TConnection; AReadOnly: boolean);
+var s: string;
 begin
   fConnection:= aConnection;
   fBody:= TpFIBTransaction.Create(nil);
+  fReadOnly:= AReadOnly;
+  if AReadOnly then
+    s:= 'read,';
+  s:= s + 'read_committed,rec_version,nowait';
+  fBody.TRParams.CommaText:= s;
+  fBody.AddDatabase(aConnection.fDB);
 end;
 
 destructor TTransaction.Destroy;
@@ -454,6 +455,11 @@ end;
 function TTransaction.IsActive: Boolean;
 begin
   result:= fBody.Active;
+end;
+
+function TTransaction.ReadOnly: boolean;
+begin
+  result:= fReadOnly;
 end;
 
 procedure TTransaction.Rollback;
@@ -1071,14 +1077,15 @@ begin
 end;
 
 function TDBQuery.SetParams(const Params: array of const): IDBQuery;
-var   i: Integer;
+var i,n: Integer;
    dTmp: Double;
   _SqlType: integer;
 begin
   Result:= Self;
   ClearParamValues;
   Assert(Low(Params)=0);
-  for i := 0 to High(Params) do with Params[i], fSQL.Params[i] do begin
+  n:= min(High(Params), fSQL.ParamCount -1);
+  for i := 0 to n do with Params[i], fSQL.Params[i] do begin
     _SqlType:= SQLType and $FFFFFFFE;
     case VType of
       vtInteger   : AsInteger := VInteger;
@@ -1129,7 +1136,7 @@ function TDBQuery.SetTransaction(Value: ITransaction): IDBQuery;
 begin
   Result:= Self;
   if  not Assigned(Value) then begin
-    if  not Assigned(fConnection)  then
+    if  not Assigned(fConnection) then
       raise Exception.Create('TDBQuery.SetTransaction: Не назначен Connection');
     Value:= fConnection.ReadTRS;
   end;
@@ -1285,9 +1292,7 @@ begin
       if not fTrsOwner then
         fTrsOwner:= Retaining;
       fSQL.ExecQuery;
-      if Retaining then
-        (fTransaction as TTransaction).CommitRetaining
-      else
+      if not Retaining then
         fTransaction.Commit;
     except
       fTrsOwner:= false;

@@ -42,6 +42,8 @@ type
   public
     function  AsUsData: IUsData; override;
     function  IsEmpty: boolean; override;
+    procedure AssignRow(Src: IUsData); override;
+    procedure InsertRow(Src: IUsData); override;
   end;
 
 implementation
@@ -99,6 +101,11 @@ begin
   end;
 end;
 
+procedure TvwrCard.AssignRow(Src: IUsData);
+begin
+  dsRecord.CopyData(Src);
+end;
+
 function TvwrCard.AsUsData: IUsData;
 begin
   result:= NewUsData(dsRecord);
@@ -121,7 +128,7 @@ procedure TvwrCard.GetEditRecord;
 begin
   if not dsRecord.IsEmpty then exit;
   dsRecord.Reopen;
-  GetOpMethod(OP_SELECT).SetParams(AsUsData)
+  GetOpMethod(OP_SELECT, true).SetParams(AsUsData)
                         .Invoke(dsRecord);
 end;
 
@@ -138,6 +145,11 @@ begin
     dsInsert  : result:= vstInsert;
     else        result:= vstInactive;
   end;
+end;
+
+procedure TvwrCard.InsertRow(Src: IUsData);
+begin
+  dsRecord.CopyData(Src);
 end;
 
 procedure TvwrCard.InternalCancel;
@@ -179,55 +191,18 @@ begin
 end;
 
 procedure TvwrCard.InternalPost;
-const
-  MSG = '%s.Post: Error Viewer State';
 var
-  oper: string;
-    pk: string;
-   pkn: string;
-    vs: TViewerState;
-   row: IUsData;
+  vs: TViewerState;
 begin
-  pk:= '';
-  pkn:= dsRecord.Fields[0].FieldName;
-  case vState of
-    vstEdit:   oper:= OP_UPDATE;
-    vstInsert: oper:= OP_INSERT;
-    else
-      raise Exception.CreateFmt(MSG, [ClassName]);
-  end;
-  PushCursor;
-  GetOpMethod(oper).SetParams(dsRecord).Invoke(
-    procedure(us: IUsData)
-    begin
-      if not us.EOF then
-        pk:= coalesce(us.Values[0], '');
-    end
-  );
-  if pk = '' then
-    PostError(bpeIsEmpty);
-
   vs:= vState;
-  dsRecord.Post;
-  GetOpMethod(OP_GETROW).SetParams(dsRecord).SetParam(pkn, pk).Invoke(
-    procedure(us: IUsData)
-    begin
-      dsRecord.CopyData(us);
-      case dsRecord.RecordCount of
-        0:   PostError(bpeIsEmpty);
-        1: ;
-        else PostError(bpeTooMany);
-      end;
-    end
-  );
+  inherited;
   dsRecord.First;
   ModalResult:= mrOk;
   if Master = nil then exit;
 
-  row:= AsUsData.Start;
   case vs of
-    vstInsert: Master.InsertRow(row);
-    vstEdit  : Master.AssignRow(row);
+    vstInsert: Master.InsertRow(AsUsData.Start);
+    vstEdit  : Master.AssignRow(AsUsData.Start);
   end;
 
   if fAutoCard or Master.IsEmpty then
@@ -249,8 +224,8 @@ begin
     fDbRefresh:= us.ColCount <> Cardinal(dsRecord.FieldCount);
   end;
   if fDbRefresh then
-    GetOpMethod(OP_GETROW).SetParams(m.AsUsData)
-                          .Invoke(dsRecord)
+    GetOpMethod(OP_SELECT, true).SetParams(m.AsUsData)
+                                .Invoke(dsRecord)
   else
     dsRecord.CopyData(us, 1);
   if dsRecord.IsEmpty then

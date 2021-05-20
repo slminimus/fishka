@@ -27,7 +27,6 @@ type
     vgEditPHONES: TcxDBEditorRow;
     vgEditEMAIL: TcxDBEditorRow;
     vgEditDISCONT: TcxDBEditorRow;
-    procedure FormDblClick(Sender: TObject);
   private
   public
   end;
@@ -36,12 +35,6 @@ implementation
 {$R *.dfm}
 uses DmDatas;
 
-
-procedure TvwrTestCard.FormDblClick(Sender: TObject);
-begin
-  inherited;
-  ShowMessageFmt('%dx%d', [Width, Height]);
-end;
 
 initialization
   TvwrTestCard.RegisterViewer;

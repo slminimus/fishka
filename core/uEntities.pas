@@ -6,23 +6,36 @@ uses RTTI, Classes, Types, SysUtils, DB, usTools, usIntfs;
 type
   TEntityID = string; // GUID 36
   TPrivOper = string;
-const // OP_ - privileged operation; DS_ - DESCRIPTION
-  OP_SELECT  = 'Select';
-  DS_SELECT  = 'Просмотр';
-  OP_INSERT  = 'Insert';
-  DS_INSERT  = 'Создать';
-  OP_DELETE  = 'Delete';
-  DS_DELETE  = 'Удалить';
-  OP_UPDATE  = 'Update';
-  DS_UPDATE  = 'Исправить';
-  OP_GETROW  = 'GetRow';
-  DS_GETROW  = 'Получить строку для редактирования';
-// OP_GETROW: select одна строка (по ID); в отбор должны попасть все поля
-//             OP_SELECT и все поля для редактирования (в карточке).
+const
+//OP_ - operation;              DS_ - DESCRIPTION
+  OP_SELECT  = 'SELECT';        DS_SELECT  = 'Просмотр';
+  OP_INSERT  = 'INSERT';        DS_INSERT  = 'Создать';
+  OP_DELETE  = 'DELETE';        DS_DELETE  = 'Удалить';
+  OP_UPDATE  = 'UPDATE';        DS_UPDATE  = 'Исправить';
+  OP_GETROW  = 'GETROW';        DS_GETROW  = 'Получить строку для редактирования';
+// OP_GETROW: select одной строки (по primary key); в отбор должны попасть все
+//            столбцы OP_SELECT и все столбцы для редактирования (в карточке).
 // OP_SELECT: select для отображения списком.
-// И OP_SELECT, и OP_GETROW должны селектировать превым столбцом ID строки,
+// И OP_SELECT, и OP_GETROW должны отбирать превым столбцом primary key строки,
 // вторым - основной Human Readeble текст (для отображения в LookupCombo).
-// Прочие операции должны вызывать Exception в случае ошибки.
+// Операции должны вызывать Exception в случае ошибки.
+
+// OP_GETROW напрямую не вызывается, эта операция ищется у ENTITY, если вызван
+// OP_SELECT в альтернативном режиме. Если OP_GETROW у данного ENTITY не
+// определен, используется OP_SELECT в предположении, что доп. поля выборки
+// и условие отбора единственной строки находятся под комментариями /*/ ... /*/,
+// которые в этом случае из тела запроса удаляются.
+
+// Альтернативный режим: параметр Alter у методов TEntObjHelper; действует
+// на методы OP_SELECT..OP_UPDATE. В обычном режиме предполагается, что
+// методы редактирования (OP_INSERT,OP_DELETE,OP_UPDATE) возвращают в usData
+// одно значение (один столбец, одна строка): primary key обработанной строки.
+// В альтернативном режиме выполняется операция (в обычном режиме), затем
+// (в той же транзакции) выполняется OP_GETROW для полученного primary key из
+// операции редактирования. В случае OP_DELETE должен получиться пустой
+// результат, для OP_INSERT и OP_UPDATE - одна и только одна строка, иначе
+// выполняется Exception и откат транзакции. Пользователю метод вернет usData
+// от OP_GETROW для обновления данных в интерфейсе пользователя.
 
 type
   TOperType = (optSelect, optInsert, optUpdate, optDelete);
@@ -74,8 +87,8 @@ type
     procedure Connect(const aURL, aLogin, aPass: string);
     procedure Disconnect;
     function  Connected: boolean;
-    function  CreateOpMethod(const aEntityID: TEntityID; const aMethod: string;
-                                           RaiseIf: boolean = true): IOpMethod;
+    function  CreateOpMethod(const aEntityID: TEntityID; const aMethod: TPrivOper;
+                              Alter: boolean; RaiseIf: boolean = true): IOpMethod;
     function  StartTRS: ITransaction;
   end;
 
@@ -94,11 +107,14 @@ type
      // пары (Key=Value) из Props всех PropsAttribute
     class function AttrProps: TArray<string>;
     class function ObjMainEntityID: TEntityID;
-    class function FindOpMethod(const EntityID: TEntityID; const Oper: TPrivOper; out Value): boolean; overload;
-    class function GetOpMethod(const EntityID: TEntityID; const Oper: TPrivOper): IOpMethod; overload;
+    class function FindOpMethod(const EntityID: TEntityID; const Oper: TPrivOper;
+                                   Alter: boolean; out Value): boolean; overload;
+    class function GetOpMethod(const EntityID: TEntityID; const Oper: TPrivOper;
+                                   Alter: boolean): IOpMethod; overload;
     // первый подходящий атрибут OpMethodAttribute из всех TEntity
-    class function FindOpMethod(const Oper: TPrivOper; out Value): boolean; overload;
-    class function GetOpMethod(const Oper: TPrivOper): IOpMethod; overload;
+    class function FindOpMethod(const Oper: TPrivOper; Alter: boolean;
+                                                  out Value): boolean; overload;
+    class function GetOpMethod(const Oper: TPrivOper; Alter: boolean): IOpMethod; overload;
   end;
 
 var
@@ -165,7 +181,8 @@ begin
   result:= UpperCase(id);
 end;
 
-class function TEntObjHelper.FindOpMethod(const EntityID: TEntityID; const Oper: TPrivOper; out Value): boolean;
+class function TEntObjHelper.FindOpMethod(const EntityID: TEntityID;
+               const Oper: TPrivOper; Alter: boolean; out Value): boolean;
 var v: IOpMethod;
 begin
   v:= nil;
@@ -175,7 +192,7 @@ begin
     begin
       if EntityID <> '' then
         if not SameText(Entity.ID, EntityID) then exit;
-      vv:= DataService.CreateOpMethod(Entity.ID, Oper, false);
+      vv:= DataService.CreateOpMethod(Entity.ID, Oper, Alter, false);
       Stop:= Assigned(vv);
       if Stop then
         v:= vv
@@ -188,21 +205,22 @@ begin
     IOpMethod(Value):= v;
 end;
 
-class function TEntObjHelper.FindOpMethod(const Oper: TPrivOper; out Value): boolean;
+class function TEntObjHelper.FindOpMethod(const Oper: TPrivOper; Alter: boolean;
+                                                            out Value): boolean;
 begin
-  result:= FindOpMethod('', Oper, Value);
+  result:= FindOpMethod('', Oper, Alter, Value);
 end;
 
 class function TEntObjHelper.GetOpMethod(const EntityID: TEntityID;
-                                             const Oper: TPrivOper): IOpMethod;
+                              const Oper: TPrivOper; Alter: boolean): IOpMethod;
 begin
-  if not FindOpMethod(EntityID, Oper, result) then
+  if not FindOpMethod(EntityID, Oper, Alter, result) then
     raise Exception.CreateFmt('%s Method not found: %s', [ClassName, Oper]);
 end;
 
-class function TEntObjHelper.GetOpMethod(const Oper: TPrivOper): IOpMethod;
+class function TEntObjHelper.GetOpMethod(const Oper: TPrivOper; Alter: boolean): IOpMethod;
 begin
-  if not FindOpMethod(Oper, result) then
+  if not FindOpMethod(Oper, Alter, result) then
     raise Exception.CreateFmt('%s Method not found: %s', [ClassName, Oper]);
 end;
 
