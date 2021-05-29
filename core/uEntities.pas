@@ -1,7 +1,7 @@
 unit uEntities;
 
 interface
-uses RTTI, Classes, Types, SysUtils, DB, usTools, usIntfs;
+uses RTTI, Classes, Types, SysUtils, DB, slTools, usIntfs;
 
 type
   TEntityID = string; // GUID 36
@@ -102,6 +102,13 @@ type
 
   CardAttribute = class(EntityAttribute);
 
+  TAttrObjHelper = class helper for TObject
+  public type
+    TEnumProc<T> = reference to procedure(Attr: T; var Stop: boolean);
+  public
+    class function EnumAttrs<T: TCustomAttribute>(Proc: TEnumProc<T>): boolean;
+  end;
+
   TEntObjHelper = class helper(TAttrObjHelper) for TObject
   public
      // пары (Key=Value) из Props всех PropsAttribute
@@ -139,6 +146,30 @@ end;
 constructor EntityAttribute.Create(const aID: string);
 begin
   fID:= aID;
+end;
+
+{ TAttrObjHelper }
+
+class function TAttrObjHelper.EnumAttrs<T>(Proc: TEnumProc<T>): boolean;
+var
+  rc: TRttiContext;
+   a: TCustomAttribute;
+   stop: boolean;
+begin
+  result:= false;
+  rc:= TRttiContext.Create;
+  try
+    stop:= false;
+    for a in rc.GetType(Self).GetAttributes do begin
+      if not a.InheritsFrom(T) then Continue;
+      Proc(T(a), stop);
+      if not stop then Continue;
+      result:= true;
+      break;
+    end;
+  finally
+    rc.Free;
+  end;
 end;
 
 { TEntObjHelper }

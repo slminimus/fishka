@@ -21,8 +21,8 @@ inherited vwrCard: TvwrCard
     Top = 2
   end
   inherited BarMan: TdxBarManager
-    Left = 551
-    Top = 1
+    Left = 549
+    Top = 2
     PixelsPerInch = 96
     inherited tbnInsert: TdxBarLargeButton
       ImageIndex = 0
@@ -32,19 +32,21 @@ inherited vwrCard: TvwrCard
     end
   end
   inherited ddmInsert: TdxBarPopupMenu
-    Left = 652
+    Left = 659
     PixelsPerInch = 96
   end
   inherited ddmCard: TdxBarPopupMenu
     PixelsPerInch = 96
   end
-  object dsRecord: THMemTable
-    Left = 507
-    Top = 1
-  end
   object srcRecord: TDataSource
     DataSet = dsRecord
-    Left = 456
-    Top = 1
+    Left = 403
+    Top = 2
+  end
+  object dsRecord: TdxMemData
+    Indexes = <>
+    SortOptions = []
+    Left = 504
+    Top = 2
   end
 end

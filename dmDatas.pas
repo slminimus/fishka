@@ -4,7 +4,8 @@ interface
 
 uses
   System.SysUtils, System.Classes, System.ImageList, Vcl.ImgList, Vcl.Controls,
-  cxImageList, cxGraphics, cxStyles, cxGridTableView, cxClasses, cxVGrid;
+  cxImageList, cxGraphics, cxStyles, cxGridTableView, cxClasses, cxVGrid, Forms,
+  dgUserLogin;
 
 type
   TDmDb = class(TDataModule)
@@ -26,6 +27,7 @@ type
     stsVerticalGrid: TcxVerticalGridStyleSheet;
     stlGray: TcxStyle;
     stlGridInactive: TcxStyle;
+    procedure DataModuleCreate(Sender: TObject);
   private
   public
   end;
@@ -36,5 +38,11 @@ var
 implementation
 {%CLASSGROUP 'Vcl.Controls.TControl'}
 {$R *.dfm}
+
+procedure TDmDb.DataModuleCreate(Sender: TObject);
+begin
+  if not TfUserLogin.Execute then
+    Application.Terminate;
+end;
 
 end.

@@ -1,5 +1,6 @@
 object DmDb: TDmDb
   OldCreateOrder = False
+  OnCreate = DataModuleCreate
   Height = 219
   Width = 360
   object imlTools: TcxImageList

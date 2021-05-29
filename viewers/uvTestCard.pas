@@ -5,9 +5,9 @@ interface
 uses
   Winapi.Windows, Winapi.Messages, System.SysUtils, System.Variants, uvCards,
   System.Classes, Vcl.Graphics, Vcl.Controls, Vcl.Forms, Vcl.Dialogs,Data.DB,
-  MemDS, dxBar, cxClasses, System.Actions, Vcl.ActnList, cxGraphics, cxControls,
+  dxBar, cxClasses, System.Actions, Vcl.ActnList, cxGraphics, cxControls,
   cxLookAndFeels, cxLookAndFeelPainters, cxStyles, cxEdit, cxMaskEdit, cxVGrid,
-  cxDBVGrid, cxInplaceContainer, uEntClasses, uEntities, Vcl.ExtCtrls;
+  cxDBVGrid, cxInplaceContainer, uEntClasses, uEntities, Vcl.ExtCtrls, dxmdaset;
 
 type
   [Card(CID_TEST)]

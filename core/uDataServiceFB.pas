@@ -12,7 +12,7 @@
 unit uDataServiceFB;
 
 interface
-uses Classes, Types, SysUtils, usIntfs, usTools, Variants, DB, usDb,
+uses Classes, Types, SysUtils, usIntfs, slTools, slfTools, Variants, DB, usDb,
      uifProvider, uDBProvider, uFBProvider, uEntities;
 
 type
@@ -227,14 +227,14 @@ begin
       fQry.ParamsDebug(SqlDebug - 1);
     fQry.Exec;
 
+    qSel:= fQry;
     if fAlter then begin
       case OpType(fOper) of
         optSelect: ;
         optDelete: qSel:= CheckDelete;
         else       qSel:= CheckPost;
       end;
-    end else
-      qSel:= fQry;
+    end;
 
     if Assigned(Proc) then
       Proc(qSel);
@@ -254,7 +254,7 @@ procedure TOpMethod.Invoke(TRS: ITransaction; DataSet: TDataSet);
 begin
   Invoke(TRS, procedure(us: IUsData)
     begin
-      DataSet.CopyData(us);
+      UsCopyData(DataSet, us);
     end
   );
 end;

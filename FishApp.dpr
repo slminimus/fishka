@@ -22,7 +22,10 @@ uses
   uControllers in 'core\uControllers.pas' {Controller: TDataModule},
   uvListTest in 'viewers\uvListTest.pas' {vwrListTest},
   uvTestCard in 'viewers\uvTestCard.pas' {vwrTestCard},
-  uvEntities in 'viewers\uvEntities.pas' {vwrEntities};
+  uvEntities in 'viewers\uvEntities.pas' {vwrEntities},
+  dgUserLogin in 'Forms\dgUserLogin.pas' {fUserLogin},
+  OKCANCL1 in 'c:\delphi\21.0\ObjRepos\EN\DelphiWin32\OKCANCL1.PAS' {OKBottomDlg},
+  dgDbAliases in 'Forms\dgDbAliases.pas' {dlgDbAliases};
 
 {$R *.res}
 

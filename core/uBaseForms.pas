@@ -1,7 +1,7 @@
 unit uBaseForms;
 
 interface
-uses Classes, Types, SysUtils, Messages, Controls, Forms, usTools,
+uses Classes, Types, SysUtils, Messages, Controls, Forms, slTools,
      Windows, uControllers;
 {$REGION 'Info'}
 //Форма, работающая с TController. См. описание в uControllers.pas

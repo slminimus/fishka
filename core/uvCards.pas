@@ -5,8 +5,8 @@ interface
 uses
   Winapi.Windows, Winapi.Messages, System.SysUtils, System.Variants, Vcl.Forms,
   System.Classes, Vcl.Graphics, Vcl.Controls, Vcl.Dialogs, ufViewer, cxClasses,
-  dxBar, System.Actions, Vcl.ActnList, DB, MemDS, usIntfs, uCornDefs, usTools,
-  cxSplitter, uEntities, Vcl.ExtCtrls;
+  dxBar, System.Actions, Vcl.ActnList, DB, usIntfs, uCornDefs, slTools,
+  cxSplitter, uEntities, Vcl.ExtCtrls, dxmdaset;
 
 type
   TPanel = class(Vcl.ExtCtrls.TPanel)
@@ -20,8 +20,8 @@ type
 
   TvwrCard = class(TViewer)
     srcRecord: TDataSource;
-    dsRecord: THMemTable;
     DockPanel: TPanel;
+    dsRecord: TdxMemData;
     procedure FormCreate(Sender: TObject);
     procedure acRefreshExecute(Sender: TObject);
   private
@@ -103,7 +103,7 @@ end;
 
 procedure TvwrCard.AssignRow(Src: IUsData);
 begin
-  dsRecord.CopyData(Src);
+  UsCopyData(dsRecord, Src);
 end;
 
 function TvwrCard.AsUsData: IUsData;
@@ -127,7 +127,8 @@ end;
 procedure TvwrCard.GetEditRecord;
 begin
   if not dsRecord.IsEmpty then exit;
-  dsRecord.Reopen;
+  dsRecord.Active:= false;
+  dsRecord.Active:= true;
   GetOpMethod(OP_SELECT, true).SetParams(AsUsData)
                         .Invoke(dsRecord);
 end;
@@ -149,7 +150,7 @@ end;
 
 procedure TvwrCard.InsertRow(Src: IUsData);
 begin
-  dsRecord.CopyData(Src);
+  UsCopyData(dsRecord, Src);
 end;
 
 procedure TvwrCard.InternalCancel;
@@ -181,11 +182,13 @@ procedure TvwrCard.InternalInsert(doCopy: boolean);
 begin
   if DoCopy and not IsEmpty then
     GetEditRecord
-  else
-    dsRecord.ClearData;
+  else begin
+    dsRecord.Active:= false;
+    dsRecord.Active:= true;
+  end;
   dsRecord.Edit;
   dsRecord.Fields[0].Clear;
-  dsRecord.Post; // clear Modified
+  dsRecord.Post; // clear Modified flag
   dsRecord.Edit;
   THack(dsRecord).SetState(dsInsert);
 end;
@@ -227,7 +230,7 @@ begin
     GetOpMethod(OP_SELECT, true).SetParams(m.AsUsData)
                                 .Invoke(dsRecord)
   else
-    dsRecord.CopyData(us, 1);
+    UsCopyData(dsRecord, us, 1);
   if dsRecord.IsEmpty then
     InternalInsert;
 end;

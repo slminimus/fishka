@@ -54,7 +54,7 @@
         <VerInfo_Locale>1049</VerInfo_Locale>
         <SanitizedProjectName>FishApp</SanitizedProjectName>
         <VerInfo_Keys>CompanyName=;FileDescription=$(MSBuildProjectName);FileVersion=1.0.0.0;InternalName=;LegalCopyright=;LegalTrademarks=;OriginalFilename=;ProgramID=com.embarcadero.$(MSBuildProjectName);ProductName=$(MSBuildProjectName);ProductVersion=1.0.0.0;Comments=</VerInfo_Keys>
-        <DCC_Define>USE_DB;CURSOR;USE_FORMS;$(DCC_Define)</DCC_Define>
+        <DCC_UnitSearchPath>..\vcl;$(DCC_UnitSearchPath)</DCC_UnitSearchPath>
         <DCC_ExeOutput>bin</DCC_ExeOutput>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Base_Win32)'!=''">
@@ -159,6 +159,18 @@
         </DCCReference>
         <DCCReference Include="viewers\uvEntities.pas">
             <Form>vwrEntities</Form>
+            <FormType>dfm</FormType>
+        </DCCReference>
+        <DCCReference Include="Forms\dgUserLogin.pas">
+            <Form>fUserLogin</Form>
+            <FormType>dfm</FormType>
+        </DCCReference>
+        <DCCReference Include="c:\delphi\21.0\ObjRepos\EN\DelphiWin32\OKCANCL1.PAS">
+            <Form>OKBottomDlg</Form>
+            <FormType>dfm</FormType>
+        </DCCReference>
+        <DCCReference Include="Forms\dgDbAliases.pas">
+            <Form>dlgDbAliases</Form>
             <FormType>dfm</FormType>
         </DCCReference>
         <BuildConfiguration Include="Release">

@@ -1,23 +1,23 @@
 inherited vwrTestCard: TvwrTestCard
   Caption = 'vwrTestCard'
-  ClientHeight = 216
-  ClientWidth = 415
-  ExplicitWidth = 431
-  ExplicitHeight = 255
+  ClientHeight = 219
+  ClientWidth = 360
+  ExplicitWidth = 376
+  ExplicitHeight = 258
   PixelsPerInch = 96
   TextHeight = 13
   inherited DockPanel: TPanel
-    Width = 415
-    Height = 182
+    Width = 360
+    Height = 185
     Constraints.MinHeight = 133
     Constraints.MinWidth = 360
-    ExplicitWidth = 360
-    ExplicitHeight = 133
+    ExplicitWidth = 415
+    ExplicitHeight = 182
     object vgEdit: TcxDBVerticalGrid
       Left = 0
       Top = 0
-      Width = 415
-      Height = 182
+      Width = 360
+      Height = 185
       Align = alClient
       OptionsView.ScrollBars = ssVertical
       OptionsView.RowHeaderWidth = 110
@@ -31,8 +31,8 @@ inherited vwrTestCard: TvwrTestCard
       Styles.StyleSheet = DmDb.stsVerticalGrid
       TabOrder = 0
       DataController.DataSource = srcRecord
-      ExplicitWidth = 360
-      ExplicitHeight = 133
+      ExplicitWidth = 415
+      ExplicitHeight = 182
       Version = 1
       object vgEditID: TcxDBEditorRow
         Properties.EditPropertiesClassName = 'TcxMaskEditProperties'
@@ -118,7 +118,11 @@ inherited vwrTestCard: TvwrTestCard
     Top = 98
     PixelsPerInch = 96
   end
-  inherited dsRecord: THMemTable
+  inherited srcRecord: TDataSource
+    Left = 244
+    Top = 98
+  end
+  inherited dsRecord: TdxMemData
     Left = 180
     Top = 98
     object dsRecordID: TStringField
@@ -153,9 +157,5 @@ inherited vwrTestCard: TvwrTestCard
       DisplayLabel = #1057#1082#1080#1076#1082#1072', %'
       FieldName = 'DISCONT'
     end
-  end
-  inherited srcRecord: TDataSource
-    Left = 244
-    Top = 98
   end
 end

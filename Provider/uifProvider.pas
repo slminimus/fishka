@@ -1,7 +1,7 @@
 unit uifProvider;
 
 interface
-uses Classes, usIntfs, usTools, Generics.Collections, DB;
+uses Classes, usIntfs, slTools, Generics.Collections, DB;
 
 type
   IConnection = interface;

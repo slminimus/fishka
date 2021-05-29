@@ -10,7 +10,7 @@
 unit uFBProvider;
 
 interface
-uses Classes, Types, SysUtils, usIntfs, usTools, Generics.Collections, DB,
+uses Classes, Types, SysUtils, usIntfs, slTools, Generics.Collections, DB,
    Variants, pFIBDatabase, pFIBDataSet, pFIBQuery, FIBQuery, Math, Windows,
    UsClasses, DBConsts, IBase, FIBDataSet, pFIBFieldsDescr, pFIBProps, FibTypes,
    uifProvider
@@ -50,7 +50,6 @@ type
     fBody: TpFIBTransaction;
     fConnection: TConnection;
     fReadOnly: boolean;
-    procedure CommitRetaining;
   public
     constructor Create(aConnection: TConnection; AReadOnly: boolean);
     destructor Destroy; override;
@@ -440,11 +439,6 @@ end;
 procedure TTransaction.Commit;
 begin
   fBody.Commit;
-end;
-
-procedure TTransaction.CommitRetaining;
-begin
-  fBody.CommitRetaining;
 end;
 
 function TTransaction.Connection: IConnection;

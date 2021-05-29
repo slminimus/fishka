@@ -10,8 +10,8 @@ uses
   cxCustomData, cxFilter, cxData, cxDataStorage, cxEdit, cxNavigator,
   dxDateRanges, Data.DB, cxDBData, dxBarBuiltInMenu, cxPC, cxGridCustomView,
   cxGridCustomTableView, cxGridTableView, cxGridDBTableView, cxGridLevel,
-  cxGrid, usIntfs, UITypes, Generics.Collections, usTools, uCornDefs,
-  uEntities, Vcl.StdCtrls, Vcl.Menus, uBaseForms;
+  cxGrid, usIntfs, UITypes, Generics.Collections, slTools, slfTools,
+  uCornDefs, uEntities, Vcl.StdCtrls, Vcl.Menus, uBaseForms;
 
 type
   TViewerClass = class of TViewer;

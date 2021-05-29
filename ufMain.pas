@@ -16,14 +16,6 @@ type
     ActionList1: TActionList;
     acConnect: TAction;
     acTest1: TAction;
-    cxVerticalGrid1: TcxVerticalGrid;
-    edURL: TcxEditorRow;
-    edLogin: TcxEditorRow;
-    edPass: TcxEditorRow;
-    btnConnect: TcxButton;
-    procedure acConnectUpdate(Sender: TObject);
-    procedure acConnectExecute(Sender: TObject);
-    procedure acTest1Update(Sender: TObject);
     procedure acTest1Execute(Sender: TObject);
   private
   public
@@ -34,30 +26,11 @@ var
 
 implementation
 {$R *.dfm}
-uses uEntities, usTools, ufViewer;
-
-procedure TMainForm.acConnectExecute(Sender: TObject);
-begin
-  PushCursor;
-  if DataService.Connected then
-    DataService.Disconnect
-  else
-    DataService.Connect(edURL.Properties.Value, edLogin.Properties.Value, edPass.Properties.Value);
-end;
-
-procedure TMainForm.acConnectUpdate(Sender: TObject);
-begin
-  TAction(Sender).Checked:= DataService.Connected;
-end;
+uses ufViewer;
 
 procedure TMainForm.acTest1Execute(Sender: TObject);
 begin
   TViewer.ClassByEntityID(CID_TEST).ShowViewer;
-end;
-
-procedure TMainForm.acTest1Update(Sender: TObject);
-begin
-  TAction(Sender).Enabled:= DataService.Connected;
 end;
 
 end.
