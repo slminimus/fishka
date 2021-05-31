@@ -38,11 +38,18 @@ var
 implementation
 {%CLASSGROUP 'Vcl.Controls.TControl'}
 {$R *.dfm}
+uses uFBProvider;
 
 procedure TDmDb.DataModuleCreate(Sender: TObject);
+var dbg: string;
 begin
-  if not TfUserLogin.Execute then
+  if not TfUserLogin.Execute then begin
     Application.Terminate;
+    Application.Run;
+    Halt(7);
+  end;
+  if FindCmdLineSwitch('dbg', dbg) then
+    SqlDebugMode:= StrToIntDef(dbg, 0);
 end;
 
 end.

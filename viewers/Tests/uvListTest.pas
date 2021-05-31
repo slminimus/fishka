@@ -9,7 +9,7 @@ uses
   dxBarBuiltInMenu, System.Actions, Vcl.ActnList, cxGridLevel, cxGrid, cxFilter,
   cxPC, cxCustomData, cxData, cxDataStorage, cxEdit, cxNavigator, dxDateRanges,
   cxGridCustomTableView, cxGridTableView, cxGridCustomView, dmDatas, ufViewer,
-  uEntities, uEntClasses, Vcl.StdCtrls, uvListTblView, cxDropDownEdit,
+  uEntities, uEntApp, Vcl.StdCtrls, uvListTblView, cxDropDownEdit,
   cxBarEditItem, Vcl.ExtCtrls;
 
 type

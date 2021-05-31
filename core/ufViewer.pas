@@ -79,7 +79,6 @@ type
     // Если Viewer был вызван модально (как справочник, для выбора значения)
     FVwrModalResult: TVwrModalResult;
     FClosing: boolean;            // Viewer в процессе закрытия
-    fCardHost: TWinControl;
     fSavFocused: TWinControl;
     fChildNotify: integer;
     procedure WMCActiveControl(var Msg: TMessage); message WMC_ACTIVE_CONTROL;
@@ -88,13 +87,12 @@ type
     procedure HandleAddProps;
     function  GetMaster: TViewer;
     procedure SetMaster(const Value: TViewer);
-    procedure SetCardHost(const Value: TWinControl);
+    function  GetCardHost: TWinControl;
     procedure SaveDockExt;
     procedure CardHide;
     procedure CardShow(AutoCard: boolean);
     procedure _CardShow;
     procedure _CardHide;
-    function  GetCardAlign: TAlign;
     procedure SetCardAlign(const Value: TAlign);
   protected
     fDockExt: TPoint;
@@ -103,6 +101,7 @@ type
     fCardView: TViewer;
     fCardPanel: TWinControl;
     fAutoCard: boolean;
+    fCardAlign: TAlign;
     // Lazy refresh: если RefreshData вызывается, когда Viewer не видим, реально
     // Refresh не выполняется, а fNeedRefresh уст-ся в true. При отображении,
     // соответственно, fNeedRefresh проверяется и выполняется Refresh (если надо).
@@ -114,7 +113,7 @@ type
     procedure InitializeNewForm; override;
     procedure Notification(AComponent: TComponent; Operation: TOperation); override;
     procedure Loaded; override;
-    class function FindCardClass(const EntityID: TEntityID): TViewerClass; overload;
+    class function FindCardClass(const EntityID: TEntityID; RaiseError: boolean = true): TViewerClass; overload;
   protected
     // параметры последнего успешного RefreshData
     fLastParams: string;
@@ -139,7 +138,6 @@ type
     function  GetCardVisible: boolean; virtual;
     procedure SetCardVisible(const Value: boolean); virtual;
     procedure CardDocking(Into: boolean); dynamic;
-    procedure SetCardPlacement(aHost: TWinControl; aAlign: TAlign); overload;
 
     function _CheckDetailsDoneEdit(D: TArray<TViewer>; FreeIfOk: boolean): boolean;
     function  FormatMsgConfirmDelete: string; virtual;
@@ -162,7 +160,7 @@ type
     class function ClassByEntityID(const EntityID: TEntityID; Card: boolean = false): TViewerClass;
     class procedure RegisterViewer;
     class function MainEntityID: TEntityID;
-    class function FindCardClass: TViewerClass; overload;
+    class function FindCardClass(RaiseError: boolean = true): TViewerClass; overload;
     // Основной метод. Проверяет наличие такого объекта с тем же Params и Master,
     // затем создает новый или фокусирует существующий.
     class function ShowViewer(aMaster: TViewer = nil): TViewer; overload;
@@ -172,12 +170,13 @@ type
     constructor InplaceInto(Place: TWinControl; aAlign: TAlign; aMaster: TViewer = nil); overload;
     procedure AfterConstruction; override;
     function  IsDetail: boolean; inline; // true, если назначен Master
-    function  AsUsData: IUsData; virtual; // отдать кэшированные данные как IUsData
+    function  AsUsData(CurrentRowOnly: boolean): IUsData; virtual; // отдать кэшированные данные как IUsData
     procedure CopyData(Src: IUsData); virtual;
     function  IsParentFor(ctl: TControl): boolean;
     function  CardInplaced: boolean;
   //-- информация о текущем состоянии ------
     function  AutoConfirm(State: TViewerState): boolean;
+    function  EditByCard: boolean; dynamic;
     function  GetCanRefresh: boolean;
     function  GetCanCancel: boolean;
     function  GetCanCard: boolean; virtual;
@@ -209,7 +208,6 @@ type
     function  Details<T: TViewer>: TArray<T>; // все Viewers, у которых этот - Master
     procedure Popup(Force: boolean = true);   // сделать себя текущим отображаемым
     procedure PopupForm; // сделать верхним окном себя или свой ParentForm
-    procedure SetCardPlacement(aAlign: TAlign); overload; dynamic;
     // Редактирование
      // заменить данные в текущей строке буфера данных данными Src (добавить, если пусто)
     procedure AssignRow(Src: IUsData); virtual;
@@ -230,8 +228,8 @@ type
     property Modified: Boolean read GetModified write SetModified;
     property vState: TViewerState read GetState;
   published
-    property CardAlign: TAlign read GetCardAlign write SetCardAlign;
-    property CardHost: TWinControl read fCardHost write SetCardHost;
+    property CardAlign: TAlign read fCardAlign write SetCardAlign;
+    property CardHost: TWinControl read GetCardHost;
     property ReadOnly: boolean read GetReadOnly write SetReadOnly default false;
     property RefreshIfHidden: boolean read fRefreshIfHidden write SetRefreshIfHidden default false;
     property MsgConfirmDelete: string read FMsgConfirmDelete write FMsgConfirmDelete;
@@ -447,7 +445,7 @@ procedure TViewer.AssignRow(Src: IUsData);
 begin
 end;
 
-function TViewer.AsUsData: IUsData;
+function TViewer.AsUsData(CurrentRowOnly: boolean): IUsData;
 begin
   result:= nil;
 end;
@@ -686,12 +684,12 @@ end;
 procedure TViewer.AfterConstruction;
 begin
   inherited;
-  fCardViewClass:= FindCardClass;
-  if fCardViewClass.InheritsFrom(ClassType) then
+  fCardViewClass:= FindCardClass(false);
+  if Assigned(fCardViewClass) and fCardViewClass.InheritsFrom(ClassType) then
     fCardViewClass:= nil;
 end;
 
-class function TViewer.FindCardClass: TViewerClass;
+class function TViewer.FindCardClass(RaiseError: boolean): TViewerClass;
 var
   id: TEntityID;
 begin
@@ -704,32 +702,41 @@ begin
     end
   ) then
     id:= MainEntityID;  // если атрибут не указан, берем собственный
-  result:= FindCardClass(id);
+  result:= FindCardClass(id, RaiseError);
 end;
 
-class function TViewer.FindCardClass(const EntityID: TEntityID): TViewerClass;
+class function TViewer.FindCardClass(const EntityID: TEntityID; RaiseError: boolean): TViewerClass;
 const
   ERR = '%s: Cannot find Card Viewer fo Entity ID = %s';
 begin
+  result:= nil;
   if EntityID = '' then exit;
   if not fCardDict.TryGetValue(EntityID, result) then
-    raise Exception.CreateFmt(ERR, [ClassName, EntityID]);
+    if RaiseError then
+      raise Exception.CreateFmt(ERR, [ClassName, EntityID]);
 end;
 
 procedure TViewer.Edit;
 begin
   if not GetCanEdit then exit;
-  CardShow(true);
+  if EditByCard then
+    CardShow(true);
   if CardVisible then
     fCardView.Edit
   else
     InternalEdit;
 end;
 
+function TViewer.EditByCard: boolean;
+begin
+  result:= true;
+end;
+
 procedure TViewer.InsCopy;
 begin
   if not GetCanInsCopy then exit;
-  CardShow(true);
+  if EditByCard then
+    CardShow(true);
   if CardVisible then
     fCardView.InsCopy
   else
@@ -739,7 +746,8 @@ end;
 procedure TViewer.Insert;
 begin
   if not GetCanInsert then exit;
-  CardShow(true);
+  if EditByCard then
+    CardShow(true);
   if CardVisible then
     fCardView.Insert
   else
@@ -757,7 +765,7 @@ end;
 
 procedure TViewer.InternalDelete;
 begin
-  GetOpMethod(OP_DELETE, true).SetParams(AsUsData).Invoke;
+  GetOpMethod(OP_DELETE, true).SetParams(AsUsData(true)).Invoke;
   DeleteRow;
 end;
 
@@ -786,7 +794,7 @@ begin
       raise Exception.CreateFmt(MSG, [ClassName]);
   end;
   PushCursor;
-  GetOpMethod(oper, true).SetParams(AsUsData).Invoke(
+  GetOpMethod(oper, true).SetParams(AsUsData(true)).Invoke(
     procedure(us: IUsData)
     begin
       if vs = vstInsert then
@@ -811,7 +819,6 @@ end;
 procedure TViewer.Loaded;
 begin
   inherited;
-  fCardHost:= Self;
   fCardPanel:= Self;
   HandleAddProps;
 end;
@@ -819,7 +826,7 @@ end;
 function TViewer.PrimaryKey: Variant;
 var us: IUsData;
 begin
-  us:= AsUsData;
+  us:= AsUsData(true);
   if (us = nil) or us.EOF then exit(unassigned);
   result:= us.GetColData(0);
 end;
@@ -827,7 +834,7 @@ end;
 function TViewer.MainText: string;
 var us: IUsData;
 begin
-  us:= AsUsData;
+  us:= AsUsData(true);
   if (us = nil) or us.EOF or (us.ColCount < 2) then exit('');
   result:= us.GetColData(1);
 end;
@@ -932,7 +939,7 @@ begin
   if ParentSheet(CardPanel, Sheet) then
     Sheet.PageControl.ActivePage:= Sheet;
   wc:= TViewer(CardPanel).FindNextControl(nil, true, true, true);
-  if wc <> nil then
+  if (wc <> nil) and wc.HandleAllocated and wc.CanFocus then
     wc.SetFocus;
   PostMessage(CardPanel.Handle, WMC_ACTIVE_CONTROL, 0, 0);
 end;
@@ -1051,23 +1058,6 @@ begin
   result:= fLastParams = aParams;
 end;
 
-function TViewer.GetCardAlign: TAlign;
-begin
-  if tbnCardLeft.Down then
-    exit(alLeft);
-  if tbnCardRight.Down then
-    exit(alRight);
-  if tbnCardTop.Down then
-    exit(alTop);
-  if tbnCardBottom.Down then
-    exit(alBottom);
-  if tbnCardClient.Down then
-    exit(alClient);
-//  if tbnCardForm.Down then
-//    exit(alNone);
-  result:= alNone;
-end;
-
 function TViewer.GetCardVisible: boolean;
 begin
   result:= Assigned(fCardView);
@@ -1083,12 +1073,17 @@ begin
     alClient  : tbnCardClient.Down:= true;
     alNone    : tbnCardForm.Down:= true;
   end;
+  if fCardAlign = Value then exit;
+  fCardAlign:= Value;
+  if not CardVisible then exit;
+  SaveDockExt;
+  _CardHide;
+  _CardShow;
 end;
 
-procedure TViewer.SetCardHost(const Value: TWinControl);
+function TViewer.GetCardHost: TWinControl;
 begin
-  if fCardHost <> Value then
-    SetCardPlacement(Value, CardAlign);
+  result:= CardHostByAlign(CardAlign);
 end;
 
 procedure TViewer.SaveDockExt;
@@ -1100,21 +1095,6 @@ begin
     fDockExt.X:= cc.Width;
   if cc.Align in [alTop, alBottom] then
     fDockExt.Y:= cc.Height;
-end;
-
-procedure TViewer.SetCardPlacement(aAlign: TAlign);
-begin
-  SetCardPlacement(CardHostByAlign(aAlign), aAlign);
-end;
-
-procedure TViewer.SetCardPlacement(aHost: TWinControl; aAlign: TAlign);
-begin
-  fCardHost:= aHost;
-  CardAlign:= aAlign;
-  if not CardVisible then exit;
-  SaveDockExt;
-  _CardHide;
-  _CardShow;
 end;
 
 procedure TViewer.SetCardVisible(const Value: boolean);
@@ -1198,7 +1178,7 @@ begin
   if cc = nil then
     raise Exception.CreateFmt(MSG, [fCardView.ClassName]);
 
-  if fCardHost = nil then begin  // undock
+  if CardHost = nil then begin  // undock
     CardDocking(false);
     SaveDockExt;
     cc.Parent:= fCardView;
@@ -1212,7 +1192,7 @@ begin
     fCardView.Hide;
     cc.Hide;
     cc.Align:= CardAlign;
-    cc.Parent:= fCardHost;
+    cc.Parent:= CardHost;
     if fDockExt.X = 0 then fDockExt.X:= cc.Constraints.MinWidth;
     if fDockExt.Y = 0 then fDockExt.Y:= cc.Constraints.MinHeight;
     cc.Width:= min(fDockExt.X, 3 * cc.Parent.ClientWidth div 4);
@@ -1274,12 +1254,12 @@ end;
 procedure TViewer.tbnCardAlignClick(Sender: TObject);
 begin
   case (Sender as TComponent).Tag of
-    1: SetCardPlacement(alLeft);
-    2: SetCardPlacement(alRight);
-    3: SetCardPlacement(alTop);
-    4: SetCardPlacement(alBottom);
-    5: SetCardPlacement(alClient);
-    6: SetCardPlacement(alNone);
+    1: CardAlign:= alLeft;
+    2: CardAlign:= alRight;
+    3: CardAlign:= alTop;
+    4: CardAlign:= alBottom;
+    5: CardAlign:= alClient;
+    6: CardAlign:= alNone;
   end;
 end;
 

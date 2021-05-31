@@ -48,11 +48,13 @@ create table MAINTREE(
      ID        XGUID     not null primary key
     ,NAME      XOBJNAME  not null
     ,PARENT    XGUID
+    ,TAG       XINT
     ,ENTITY    XGUID
 );
 alter table MAINTREE add constraint FK_MAINTREE_1 foreign key(PARENT) references MAINTREE(ID);
 alter table MAINTREE add constraint FK_MAINTREE_2 foreign key(ENTITY) references ENTITIES(ID);
 comment on table MAINTREE is '"Меню" программы';
+comment on column MAINTREE.TAG is 'Например, Image при отображении в приложении';
 
 -- drop table SYSPRIV
 create table SYSPRIV(

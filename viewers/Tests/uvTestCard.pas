@@ -7,7 +7,7 @@ uses
   System.Classes, Vcl.Graphics, Vcl.Controls, Vcl.Forms, Vcl.Dialogs,Data.DB,
   dxBar, cxClasses, System.Actions, Vcl.ActnList, cxGraphics, cxControls,
   cxLookAndFeels, cxLookAndFeelPainters, cxStyles, cxEdit, cxMaskEdit, cxVGrid,
-  cxDBVGrid, cxInplaceContainer, uEntClasses, uEntities, Vcl.ExtCtrls, dxmdaset;
+  cxDBVGrid, cxInplaceContainer, uEntApp, uEntities, Vcl.ExtCtrls, dxmdaset;
 
 type
   [Card(CID_TEST)]

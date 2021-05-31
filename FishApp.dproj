@@ -83,7 +83,6 @@
         <AppDPIAwarenessMode>PerMonitorV2</AppDPIAwarenessMode>
         <VerInfo_IncludeVerInfo>true</VerInfo_IncludeVerInfo>
         <VerInfo_Locale>1033</VerInfo_Locale>
-        <Debugger_DebugSourcePath>E:\A\FIB\;$(Debugger_DebugSourcePath)</Debugger_DebugSourcePath>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Cfg_2)'!=''">
         <DCC_LocalDebugSymbols>false</DCC_LocalDebugSymbols>
@@ -99,10 +98,6 @@
         <DelphiCompile Include="$(MainSource)">
             <MainSource>MainSource</MainSource>
         </DelphiCompile>
-        <DCCReference Include="ufMain.pas">
-            <Form>MainForm</Form>
-            <FormType>dfm</FormType>
-        </DCCReference>
         <DCCReference Include="dmDatas.pas">
             <Form>DmDb</Form>
             <FormType>dfm</FormType>
@@ -123,7 +118,7 @@
         <DCCReference Include="core\uEntities.pas"/>
         <DCCReference Include="core\uCornDefs.pas"/>
         <DCCReference Include="core\uDataServiceFB.pas"/>
-        <DCCReference Include="core\uEntClasses.pas"/>
+        <DCCReference Include="core\uEntSystem.pas"/>
         <DCCReference Include="core\ufViewer.pas">
             <Form>Viewer</Form>
             <FormType>dfm</FormType>
@@ -149,11 +144,11 @@
             <FormType>dfm</FormType>
             <DesignClass>TDataModule</DesignClass>
         </DCCReference>
-        <DCCReference Include="viewers\uvListTest.pas">
+        <DCCReference Include="viewers\Tests\uvListTest.pas">
             <Form>vwrListTest</Form>
             <FormType>dfm</FormType>
         </DCCReference>
-        <DCCReference Include="viewers\uvTestCard.pas">
+        <DCCReference Include="viewers\Tests\uvTestCard.pas">
             <Form>vwrTestCard</Form>
             <FormType>dfm</FormType>
         </DCCReference>
@@ -165,12 +160,21 @@
             <Form>fUserLogin</Form>
             <FormType>dfm</FormType>
         </DCCReference>
-        <DCCReference Include="c:\delphi\21.0\ObjRepos\EN\DelphiWin32\OKCANCL1.PAS">
-            <Form>OKBottomDlg</Form>
-            <FormType>dfm</FormType>
-        </DCCReference>
         <DCCReference Include="Forms\dgDbAliases.pas">
             <Form>dlgDbAliases</Form>
+            <FormType>dfm</FormType>
+        </DCCReference>
+        <DCCReference Include="viewers\uEntApp.pas"/>
+        <DCCReference Include="core\uvcMainTree.pas">
+            <Form>vwcMainTree</Form>
+            <FormType>dfm</FormType>
+        </DCCReference>
+        <DCCReference Include="ufMain.pas">
+            <Form>MainForm</Form>
+            <FormType>dfm</FormType>
+        </DCCReference>
+        <DCCReference Include="core\uvDSViewer.pas">
+            <Form>vwrDSViewer</Form>
             <FormType>dfm</FormType>
         </DCCReference>
         <BuildConfiguration Include="Release">

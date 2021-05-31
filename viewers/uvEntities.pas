@@ -9,10 +9,14 @@ uses
   cxLookAndFeelPainters, cxCustomData, cxFilter, cxData, cxDataStorage, cxGrid,
   cxNavigator, dxDateRanges, cxClasses, Actions, ActnList, cxGridLevel, dxBar,
   cxGridCustomView, cxGridCustomTableView, cxGridTableView, ufViewer, uEntities,
-  uEntClasses;
+  uEntSystem;
 
 type
+  [Entity(CID_ENTITIES)]
   TvwrEntities = class(TvwrListTblView)
+    gvMain_ID: TcxGridColumn;
+    gvMain_NAME: TcxGridColumn;
+    gvMain_DESCR: TcxGridColumn;
   private
   public
   end;

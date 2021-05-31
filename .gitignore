@@ -2,3 +2,5 @@ dcu/
 *.dsk
 *.dproj.local
 *.identcache
+/bin/Connect.cfg
+/bin/sl.ini

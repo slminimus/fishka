@@ -1,5 +1,5 @@
-inherited MainForm: TMainForm
-  Caption = 'MainForm'
+inherited vwrMainTree: TvwrMainTree
+  Caption = 'vwrMainTree'
   ClientHeight = 792
   ClientWidth = 378
   OnCreate = FormCreate
@@ -7,149 +7,104 @@ inherited MainForm: TMainForm
   ExplicitHeight = 831
   PixelsPerInch = 96
   TextHeight = 13
-  object Panel1: TPanel [0]
+  object Tree: TcxDBTreeList [0]
     Left = 0
     Top = 34
     Width = 378
     Height = 758
+    ParentCustomHint = False
     Align = alClient
-    BevelOuter = bvNone
-    Caption = 'Panel1'
-    ShowCaption = False
+    Bands = <
+      item
+      end>
+    DataController.DataSource = DataSource
+    DataController.ParentField = 'PARENT'
+    DataController.KeyField = 'ID'
+    Images = TreeImages
+    LookAndFeel.Kind = lfOffice11
+    LookAndFeel.NativeStyle = False
+    Navigator.Buttons.OnButtonClick = TreeNavigatorButtonsButtonClick
+    Navigator.Buttons.CustomButtons = <>
+    Navigator.Buttons.First.Visible = False
+    Navigator.Buttons.PriorPage.Visible = False
+    Navigator.Buttons.Prior.Visible = False
+    Navigator.Buttons.Next.Visible = False
+    Navigator.Buttons.NextPage.Visible = False
+    Navigator.Buttons.Last.Visible = False
+    Navigator.Buttons.Insert.Hint = #1044#1086#1073#1072#1074#1080#1090#1100' '#1087#1086#1076#1087#1072#1087#1082#1091
+    Navigator.Buttons.Append.Hint = #1044#1086#1073#1072#1074#1080#1090#1100' '#1088#1103#1076#1086#1084
+    Navigator.Buttons.Append.Visible = True
+    Navigator.Buttons.Delete.Hint = #1059#1076#1072#1083#1080#1090#1100
+    Navigator.Buttons.Edit.Visible = True
+    Navigator.Buttons.Post.Hint = #1057#1086#1093#1088#1072#1085#1080#1090#1100
+    Navigator.Buttons.Cancel.Hint = #1054#1090#1084#1077#1085#1072
+    Navigator.Buttons.Refresh.Hint = #1054#1073#1085#1086#1074#1080#1090#1100
+    Navigator.Buttons.Refresh.Visible = True
+    Navigator.Buttons.SaveBookmark.Visible = False
+    Navigator.Buttons.GotoBookmark.Visible = False
+    Navigator.Buttons.Filter.Visible = False
+    Navigator.Visible = True
+    OptionsBehavior.CopyCaptionsToClipboard = False
+    OptionsData.AnsiSort = True
+    OptionsData.Deleting = False
+    OptionsData.ImmediatePost = True
+    OptionsSelection.CellSelect = False
+    OptionsSelection.InvertSelect = False
+    OptionsView.ColumnAutoWidth = True
+    OptionsView.Headers = False
+    OptionsView.ShowRoot = False
+    PopupMenu = ddmCard
+    RootValue = -1
     TabOrder = 4
-    object Tree: TcxDBTreeList
-      Left = 0
-      Top = 0
-      Width = 378
-      Height = 758
-      ParentCustomHint = False
-      Align = alClient
-      Bands = <
-        item
-        end>
-      DataController.DataSource = DataSource
-      DataController.ParentField = 'PARENT'
-      DataController.KeyField = 'ID'
-      Images = TreeImages
-      LookAndFeel.Kind = lfOffice11
-      LookAndFeel.NativeStyle = False
-      Navigator.Buttons.CustomButtons = <>
-      Navigator.Buttons.First.Visible = False
-      Navigator.Buttons.PriorPage.Visible = False
-      Navigator.Buttons.Prior.Visible = False
-      Navigator.Buttons.Next.Visible = False
-      Navigator.Buttons.NextPage.Visible = False
-      Navigator.Buttons.Last.Visible = False
-      Navigator.Buttons.Insert.Hint = #1044#1086#1073#1072#1074#1080#1090#1100' '#1087#1086#1076#1087#1072#1087#1082#1091
-      Navigator.Buttons.Append.Hint = #1044#1086#1073#1072#1074#1080#1090#1100' '#1088#1103#1076#1086#1084
-      Navigator.Buttons.Append.Visible = True
-      Navigator.Buttons.Delete.Hint = #1059#1076#1072#1083#1080#1090#1100
-      Navigator.Buttons.Edit.Visible = True
-      Navigator.Buttons.Post.Hint = #1057#1086#1093#1088#1072#1085#1080#1090#1100
-      Navigator.Buttons.Cancel.Hint = #1054#1090#1084#1077#1085#1072
-      Navigator.Buttons.Refresh.Hint = #1054#1073#1085#1086#1074#1080#1090#1100
-      Navigator.Buttons.Refresh.Visible = True
-      Navigator.Buttons.SaveBookmark.Visible = False
-      Navigator.Buttons.GotoBookmark.Visible = False
-      Navigator.Buttons.Filter.Visible = False
-      OptionsBehavior.CopyCaptionsToClipboard = False
-      OptionsData.CancelOnExit = False
-      OptionsData.AnsiSort = True
-      OptionsData.Deleting = False
-      OptionsData.ImmediatePost = True
-      OptionsSelection.CellSelect = False
-      OptionsSelection.InvertSelect = False
-      OptionsView.ColumnAutoWidth = True
-      OptionsView.Headers = False
-      OptionsView.ShowRoot = False
-      PopupMenu = pmTree
-      RootValue = -1
-      TabOrder = 0
-      OnGetNodeImageIndex = TreeGetNodeImageIndex
-      object TreeID: TcxDBTreeListColumn
-        Visible = False
-        DataBinding.FieldName = 'ID'
-        Width = 100
-        Position.ColIndex = 0
-        Position.RowIndex = 0
-        Position.BandIndex = 0
-        Summary.FooterSummaryItems = <>
-        Summary.GroupFooterSummaryItems = <>
-      end
-      object TreeNAME: TcxDBTreeListColumn
-        DataBinding.FieldName = 'NAME'
-        Width = 125
-        Position.ColIndex = 1
-        Position.RowIndex = 0
-        Position.BandIndex = 0
-        Summary.FooterSummaryItems = <>
-        Summary.GroupFooterSummaryItems = <>
-      end
-      object TreePARENT: TcxDBTreeListColumn
-        Visible = False
-        DataBinding.FieldName = 'PARENT'
-        Width = 100
-        Position.ColIndex = 2
-        Position.RowIndex = 0
-        Position.BandIndex = 0
-        Summary.FooterSummaryItems = <>
-        Summary.GroupFooterSummaryItems = <>
-      end
-      object TreeENTITY: TcxDBTreeListColumn
-        Visible = False
-        DataBinding.FieldName = 'ENTITY'
-        Width = 100
-        Position.ColIndex = 3
-        Position.RowIndex = 0
-        Position.BandIndex = 0
-        Summary.FooterSummaryItems = <>
-        Summary.GroupFooterSummaryItems = <>
-      end
+    OnGetNodeImageIndex = TreeGetNodeImageIndex
+    ExplicitLeft = 56
+    ExplicitTop = -182
+    ExplicitWidth = 533
+    object TreeID: TcxDBTreeListColumn
+      Visible = False
+      DataBinding.FieldName = 'ID'
+      Position.ColIndex = 0
+      Position.RowIndex = 0
+      Position.BandIndex = 0
+      Summary.FooterSummaryItems = <>
+      Summary.GroupFooterSummaryItems = <>
+    end
+    object TreeNAME: TcxDBTreeListColumn
+      DataBinding.FieldName = 'NAME'
+      Width = 125
+      Position.ColIndex = 1
+      Position.RowIndex = 0
+      Position.BandIndex = 0
+      Summary.FooterSummaryItems = <>
+      Summary.GroupFooterSummaryItems = <>
+    end
+    object TreePARENT: TcxDBTreeListColumn
+      Visible = False
+      DataBinding.FieldName = 'PARENT'
+      Position.ColIndex = 2
+      Position.RowIndex = 0
+      Position.BandIndex = 0
+      Summary.FooterSummaryItems = <>
+      Summary.GroupFooterSummaryItems = <>
+    end
+    object TreeENTITY: TcxDBTreeListColumn
+      Visible = False
+      DataBinding.FieldName = 'ENTITY'
+      Position.ColIndex = 3
+      Position.RowIndex = 0
+      Position.BandIndex = 0
+      Summary.FooterSummaryItems = <>
+      Summary.GroupFooterSummaryItems = <>
     end
   end
   inherited MainActions: TActionList
     Left = 80
     Top = 51
-    inherited acInsert: TAction
-      Caption = #1044#1086#1073#1072#1074#1080#1090#1100' '#1088#1103#1076#1086#1084
-      Hint = #1044#1086#1073#1072#1074#1080#1090#1100' '#1088#1103#1076#1086#1084
-    end
-    inherited acInsCopy: TAction
-      Caption = #1044#1086#1073#1072#1074#1080#1090#1100' '#1087#1086#1076#1091#1079#1077#1083
-      Hint = #1044#1086#1073#1072#1074#1080#1090#1100' '#1087#1086#1076#1091#1079#1077#1083
-    end
   end
   inherited BarMan: TdxBarManager
     Left = 16
     Top = 51
     PixelsPerInch = 96
-    inherited tbrMain: TdxBar
-      ItemLinks = <
-        item
-          Visible = True
-          ItemName = 'tbnRefresh'
-        end
-        item
-          Visible = True
-          ItemName = 'tbnCard'
-        end
-        item
-          Visible = True
-          ItemName = 'tbnInsert'
-        end
-        item
-          Visible = True
-          ItemName = 'tbnPost'
-        end
-        item
-          Visible = True
-          ItemName = 'tbnDelete'
-        end
-        item
-          Visible = True
-          ItemName = 'tbnCancel'
-        end>
-    end
     inherited tbnInsert: TdxBarLargeButton
       ImageIndex = 0
     end
@@ -166,32 +121,6 @@ inherited MainForm: TMainForm
     Left = 208
     Top = 53
     PixelsPerInch = 96
-  end
-  inherited MemData: TdxMemData
-    object MemDataID: TStringField
-      FieldName = 'ID'
-      Size = 36
-    end
-    object MemDataNAME: TStringField
-      DisplayLabel = #1058#1077#1082#1089#1090
-      FieldName = 'NAME'
-      Size = 32
-    end
-    object MemDataPARENT: TStringField
-      FieldName = 'PARENT'
-      Size = 36
-    end
-    object MemDataTAG: TIntegerField
-      FieldName = 'TAG'
-    end
-    object MemDataENTITY: TStringField
-      DisplayLabel = #1057#1091#1097#1085#1086#1089#1090#1100
-      FieldName = 'ENTITY'
-      Size = 36
-    end
-  end
-  inherited DataSource: TDataSource
-    OnStateChange = DataSourceStateChange
   end
   object TreeImages: TcxImageList
     SourceDPI = 96
@@ -342,9 +271,37 @@ inherited MainForm: TMainForm
           4E44AE426082}
       end>
   end
-  object pmTree: TPopupMenu
-    Left = 200
+  object DataSource: TDataSource
+    DataSet = MemData
+    OnStateChange = DataSourceStateChange
+    Left = 72
     Top = 112
+  end
+  object MemData: TdxMemData
+    Indexes = <>
+    SortOptions = []
+    Left = 16
+    Top = 112
+    object MemDataID: TStringField
+      FieldName = 'ID'
+      Size = 36
+    end
+    object MemDataNAME: TStringField
+      FieldName = 'NAME'
+      Size = 32
+    end
+    object MemDataPARENT: TStringField
+      FieldName = 'PARENT'
+      Size = 36
+    end
+    object MemDataENTITY: TStringField
+      FieldName = 'ENTITY'
+      Size = 36
+    end
+  end
+  object pmTree: TPopupMenu
+    Left = 88
+    Top = 176
     object miEditing: TMenuItem
       Caption = #1056#1077#1076#1072#1082#1090#1080#1088#1086#1074#1090#1100
       ShortCut = 113

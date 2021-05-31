@@ -150,6 +150,9 @@ type
 
 function ExUnknownMsg(const Msg: string): string;
 
+var
+  SqlDebugMode: integer = 0;
+
 implementation
 uses uDBProvider, Fib, StrUtils;
 
@@ -866,7 +869,7 @@ end;
 
 function TDBQuery.ParamsDebug(Mode: integer): IDBQuery;
   //---
-  procedure Mode1;
+  procedure Mode2;
   var i: integer;
       s: string;
   begin
@@ -878,13 +881,13 @@ function TDBQuery.ParamsDebug(Mode: integer): IDBQuery;
     OutputDebugString(PChar(s));
   end;
   //---
-  procedure Mode2;
+  procedure Mode3;
   begin
     OutputDebugString(PChar(fSQL.SQL.Text));
-    Mode1;
+    Mode2;
   end;
   //---
-  procedure Mode3;
+  procedure Mode4;
   const
     CBLOCK =
        #13#10'execute block'
@@ -963,13 +966,11 @@ function TDBQuery.ParamsDebug(Mode: integer): IDBQuery;
   //---
 begin
   result:= Self;
-  if ParamCount = 0 then
-    Mode:= 0;
   case Mode of
-    0:   OutputDebugString(PChar(fSQL.SQL.Text));
-    1:   Mode1;
+    1:   OutputDebugString(PChar(fSQL.SQL.Text));
     2:   Mode2;
-    else Mode3;
+    3:   Mode3;
+    else Mode4;
   end;
 end;
 
@@ -1275,8 +1276,8 @@ procedure TDBQuery._Open(Retaining, ForceExec: boolean);
 begin
   if IsActive and not ForceExec then
     Exit;
-//  if SqlDebugMode >= 0 then
-//    ParamsDebug(SqlDebugMode);
+  if SqlDebugMode > 0 then
+    ParamsDebug(SqlDebugMode);
   if fTransaction.IsActive and not fTrsOwner then
     fSQL.ExecQuery
   else begin

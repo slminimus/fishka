@@ -9,6 +9,9 @@ inherited vwrListTest: TvwrListTest
     ExplicitHeight = 418
     ClientRectBottom = 417
     inherited tsList: TcxTabSheet
+      ExplicitLeft = 0
+      ExplicitTop = 0
+      ExplicitWidth = 0
       ExplicitHeight = 396
       inherited grdMain: TcxGrid
         Height = 396

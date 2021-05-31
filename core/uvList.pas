@@ -34,15 +34,14 @@ type
     procedure CardDocking(Into: boolean); override;
     function  CardHostByAlign(aAlign: TAlign): TWinControl; override;
   public
-    procedure InitializeNewForm; override;
     function  MainView: TcxGridTableView; inline;
-    function  AsUsData: IUsData; override;
+    function  AsUsData(CurrentRowOnly: boolean): IUsData; override;
     function  IsEmpty: boolean; override;
   end;
 
 implementation
 {$R *.dfm}
-uses usDb;
+uses usDb, usClasses;
 
 { TvwrList }
 
@@ -50,12 +49,6 @@ procedure TvwrList.FormCreate(Sender: TObject);
 begin
   inherited;
   pgsMain.ActivePage:= tsList;
-end;
-
-procedure TvwrList.InitializeNewForm;
-begin
-  inherited;
-  CardHost:= tsList;
 end;
 
 function TvwrList.IsEmpty: boolean;
@@ -97,9 +90,11 @@ begin
   result:= TcxGridTableView(lvlMain.GridView);
 end;
 
-function TvwrList.AsUsData: IUsData;
+function TvwrList.AsUsData(CurrentRowOnly: boolean): IUsData;
 begin
-  result:= NewUsData(MainView);
+  result:= NewUsData(MainView).Start(-1);
+  if CurrentRowOnly then
+    result:= NewUsDataCache(result, 1);
 end;
 
 procedure TvwrList.ViewCanFocusRecord(Sender: TcxCustomGridTableView;

@@ -109,7 +109,7 @@ type
     class function EnumAttrs<T: TCustomAttribute>(Proc: TEnumProc<T>): boolean;
   end;
 
-  TEntObjHelper = class helper(TAttrObjHelper) for TObject
+  TEntObjHelper = class helper for TComponent
   public
      // пары (Key=Value) из Props всех PropsAttribute
     class function AttrProps: TArray<string>;

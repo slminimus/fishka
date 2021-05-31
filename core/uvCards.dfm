@@ -1,20 +1,29 @@
 inherited vwrCard: TvwrCard
   BorderStyle = bsSizeToolWin
   Caption = 'vwrCard'
+  ClientHeight = 344
+  ClientWidth = 729
   FormStyle = fsStayOnTop
+  Position = poDesigned
   OnCreate = FormCreate
+  ExplicitWidth = 745
+  ExplicitHeight = 383
   PixelsPerInch = 96
   TextHeight = 13
   object DockPanel: TPanel [0]
     Tag = -1
     Left = 0
     Top = 34
-    Width = 750
-    Height = 416
+    Width = 729
+    Height = 310
     Align = alClient
     BevelOuter = bvNone
+    Constraints.MinHeight = 170
+    Constraints.MinWidth = 550
     ShowCaption = False
     TabOrder = 4
+    ExplicitWidth = 550
+    ExplicitHeight = 170
   end
   inherited MainActions: TActionList
     Left = 600

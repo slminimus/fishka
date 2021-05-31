@@ -40,7 +40,7 @@ type
     procedure InternalPost; override;
     procedure InternalRefresh; override;
   public
-    function  AsUsData: IUsData; override;
+    function  AsUsData(CurrentRowOnly: boolean): IUsData; override;
     function  IsEmpty: boolean; override;
     procedure AssignRow(Src: IUsData); override;
     procedure InsertRow(Src: IUsData); override;
@@ -106,7 +106,7 @@ begin
   UsCopyData(dsRecord, Src);
 end;
 
-function TvwrCard.AsUsData: IUsData;
+function TvwrCard.AsUsData(CurrentRowOnly: boolean): IUsData;
 begin
   result:= NewUsData(dsRecord);
 end;
@@ -116,6 +116,7 @@ begin
   inherited;
   CardPanel.Parent:= Self;
   CardPanel.Align:= alClient;
+  MakeFullyVisible;
 end;
 
 procedure TvwrCard.FixDataChanges;
@@ -129,7 +130,7 @@ begin
   if not dsRecord.IsEmpty then exit;
   dsRecord.Active:= false;
   dsRecord.Active:= true;
-  GetOpMethod(OP_SELECT, true).SetParams(AsUsData)
+  GetOpMethod(OP_SELECT, true).SetParams(AsUsData(true))
                         .Invoke(dsRecord);
 end;
 
@@ -204,8 +205,8 @@ begin
   if Master = nil then exit;
 
   case vs of
-    vstInsert: Master.InsertRow(AsUsData.Start);
-    vstEdit  : Master.AssignRow(AsUsData.Start);
+    vstInsert: Master.InsertRow(AsUsData(true).Start);
+    vstEdit  : Master.AssignRow(AsUsData(true).Start);
   end;
 
   if fAutoCard or Master.IsEmpty then
@@ -223,11 +224,11 @@ begin
 
   dsRecord.Active:= true;
   if not fDbRefresh then begin
-    us:= m.AsUsData;
+    us:= m.AsUsData(true);
     fDbRefresh:= us.ColCount <> Cardinal(dsRecord.FieldCount);
   end;
   if fDbRefresh then
-    GetOpMethod(OP_SELECT, true).SetParams(m.AsUsData)
+    GetOpMethod(OP_SELECT, true).SetParams(m.AsUsData(true))
                                 .Invoke(dsRecord)
   else
     UsCopyData(dsRecord, us, 1);
